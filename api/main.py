@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from api.routers import calculator, diagnose, vision
 
@@ -37,6 +39,13 @@ app.add_middleware(
 app.include_router(calculator.router, prefix="/api/v1")
 app.include_router(diagnose.router,   prefix="/api/v1")
 app.include_router(vision.router,     prefix="/api/v1")
+
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+
+@app.get("/app", include_in_schema=False)
+def frontend():
+    return FileResponse("frontend/index.html")
 
 
 @app.get("/", tags=["Health"])

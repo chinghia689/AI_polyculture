@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PolyAqua — Chẩn đoán bệnh tôm</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a5276;
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; }
+    header span { font-size: 0.85rem; opacity: 0.8; }
+
+    main { max-width: 600px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: #2d3748; }
+
+    /* Upload zone */
+    #upload-zone {
+      border: 2px dashed #90cdf4;
+      border-radius: 10px;
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      background: #ebf8ff;
+    }
+    #upload-zone:hover, #upload-zone.drag { background: #bee3f8; }
+    #upload-zone .icon { font-size: 2.5rem; margin-bottom: 8px; }
+    #upload-zone p { color: #4a90d9; font-size: 0.95rem; font-weight: 500; }
+    #upload-zone small { color: #718096; font-size: 0.8rem; }
+    #file-input { display: none; }
+
+    #preview-wrap { display: none; margin-top: 14px; text-align: center; }
+    #preview-img {
+      max-width: 100%; max-height: 260px; border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    #change-btn {
+      display: inline-block; margin-top: 8px; font-size: 0.8rem;
+      color: #4a90d9; cursor: pointer; text-decoration: underline;
+    }
+
+    /* Params */
+    .params-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .param-item label {
+      display: block; font-size: 0.8rem; color: #718096; margin-bottom: 4px;
+    }
+    .param-item input {
+      width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0;
+      border-radius: 8px; font-size: 0.95rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .param-item input:focus { border-color: #4a90d9; }
+
+    /* Button */
+    #submit-btn {
+      width: 100%; padding: 14px; border: none; border-radius: 10px;
+      background: #1a5276; color: white; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    #submit-btn:hover { background: #154360; }
+    #submit-btn:disabled { background: #a0aec0; cursor: not-allowed; }
+
+    /* Spinner */
+    .spinner {
+      display: none; text-align: center; padding: 20px;
+      color: #718096; font-size: 0.9rem;
+    }
+    .spinner::before {
+      content: ''; display: block; width: 36px; height: 36px; margin: 0 auto 10px;
+      border: 3px solid #e2e8f0; border-top-color: #1a5276;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Result */
+    #result { display: none; }
+
+    .badge {
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;
+    }
+    .badge.healthy { background: #c6f6d5; color: #276749; }
+    .badge.sick    { background: #fed7d7; color: #9b2335; }
+
+    .result-disease {
+      font-size: 1.2rem; font-weight: 700; margin-bottom: 4px;
+    }
+    .result-conf {
+      font-size: 0.85rem; color: #718096; margin-bottom: 16px;
+    }
+
+    .conf-bar-wrap {
+      background: #e2e8f0; border-radius: 4px; height: 8px; margin-bottom: 16px;
+    }
+    .conf-bar {
+      height: 8px; border-radius: 4px; background: #1a5276;
+      transition: width 0.6s ease;
+    }
+
+    .section-title {
+      font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #718096; margin-bottom: 8px;
+    }
+
+    .treatment {
+      background: #f7fafc; border-left: 3px solid #1a5276;
+      border-radius: 0 8px 8px 0; padding: 14px 16px;
+      font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap;
+      max-height: 400px; overflow-y: auto;
+    }
+
+    .sources { margin-top: 12px; }
+    .source-tag {
+      display: inline-block; background: #ebf8ff; color: #2b6cb0;
+      font-size: 0.75rem; padding: 3px 8px; border-radius: 4px;
+      margin: 3px 3px 0 0;
+    }
+
+    .calc-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;
+    }
+    .calc-item {
+      background: #f7fafc; border-radius: 8px; padding: 10px 12px;
+    }
+    .calc-item .val { font-size: 1.1rem; font-weight: 700; color: #1a5276; }
+    .calc-item .lbl { font-size: 0.75rem; color: #718096; margin-top: 2px; }
+
+    .error-box {
+      background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px;
+      padding: 12px 16px; color: #9b2335; font-size: 0.9rem; display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🦐 PolyAqua Agent</h1>
+    <span>Chẩn đoán bệnh tôm — ĐBSCL</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Upload -->
+  <div class="card">
+    <h2>Chụp / tải ảnh tôm</h2>
+    <div id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="icon">📷</div>
+      <p>Nhấn để chọn ảnh</p>
+      <small>hoặc kéo thả vào đây · JPG, PNG</small>
+    </div>
+    <input type="file" id="file-input" accept="image/*" capture="environment" />
+    <div id="preview-wrap">
+      <img id="preview-img" src="" alt="preview" />
+      <div id="change-btn" onclick="resetUpload()">Đổi ảnh khác</div>
+    </div>
+  </div>
+
+  <!-- Thông số ao (tuỳ chọn) -->
+  <div class="card">
+    <h2>Thông số ao <span style="font-weight:400;color:#718096">(tuỳ chọn)</span></h2>
+    <div class="params-grid">
+      <div class="param-item">
+        <label>pH nước</label>
+        <input type="number" id="ph" placeholder="vd: 7.5" step="0.1" min="0" max="14" />
+      </div>
+      <div class="param-item">
+        <label>Độ mặn (ppt)</label>
+        <input type="number" id="salinity" placeholder="vd: 15" step="0.5" min="0" max="45" />
+      </div>
+      <div class="param-item">
+        <label>Nhiệt độ (°C)</label>
+        <input type="number" id="temperature" placeholder="vd: 28" step="0.5" min="15" max="42" />
+      </div>
+      <div class="param-item">
+        <label>Diện tích (ha)</label>
+        <input type="number" id="area_ha" placeholder="vd: 1.5" step="0.1" min="0" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Submit -->
+  <button id="submit-btn" onclick="diagnose()" disabled>Chẩn đoán</button>
+
+  <!-- Loading -->
+  <div class="spinner" id="spinner">Đang phân tích ảnh...</div>
+
+  <!-- Result -->
+  <div id="result">
+
+    <div class="card">
+      <div id="result-badge" class="badge"></div>
+      <div class="result-disease" id="result-disease"></div>
+      <div class="result-conf" id="result-conf"></div>
+      <div class="conf-bar-wrap">
+        <div class="conf-bar" id="conf-bar" style="width:0%"></div>
+      </div>
+
+      <div class="section-title">Phác đồ điều trị</div>
+      <div class="treatment" id="treatment"></div>
+
+      <div class="sources" id="sources-wrap">
+        <div class="section-title" style="margin-top:12px">Tài liệu tham khảo</div>
+        <div id="sources"></div>
+      </div>
+    </div>
+
+    <div class="card" id="calc-card" style="display:none">
+      <h2>Liều lượng khuyến nghị</h2>
+      <div class="calc-grid" id="calc-grid"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+  const API = '';   // same origin
+  let selectedFile = null;
+
+  // Drag & drop
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) setFile(f);
+  });
+
+  document.getElementById('file-input').addEventListener('change', e => {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  });
+
+  function setFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('preview-img').src = ev.target.result;
+      document.getElementById('preview-wrap').style.display = 'block';
+      document.getElementById('upload-zone').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('error-box').style.display = 'none';
+  }
+
+  function resetUpload() {
+    selectedFile = null;
+    document.getElementById('preview-wrap').style.display = 'none';
+    document.getElementById('upload-zone').style.display = 'block';
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('file-input').value = '';
+    document.getElementById('result').style.display = 'none';
+  }
+
+  async function diagnose() {
+    if (!selectedFile) return;
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('error-box').style.display = 'none';
+
+    const form = new FormData();
+    form.append('file', selectedFile);
+    ['ph','salinity','temperature','area_ha'].forEach(id => {
+      const v = document.getElementById(id).value;
+      if (v) form.append(id, v);
+    });
+
+    try {
+      const res = await fetch(`${API}/api/v1/vision/diagnose`, { method: 'POST', body: form });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || `Lỗi ${res.status}`);
+      }
+      const data = await res.json();
+      showResult(data);
+    } catch (e) {
+      const box = document.getElementById('error-box');
+      box.textContent = '⚠ ' + e.message;
+      box.style.display = 'block';
+    } finally {
+      document.getElementById('spinner').style.display = 'none';
+      btn.disabled = false;
+    }
+  }
+
+  function showResult(data) {
+    // Badge
+    const badge = document.getElementById('result-badge');
+    badge.textContent = data.is_healthy ? '✓ Tôm khỏe mạnh' : '⚠ Phát hiện bệnh';
+    badge.className = 'badge ' + (data.is_healthy ? 'healthy' : 'sick');
+
+    document.getElementById('result-disease').textContent = data.label_vi;
+    document.getElementById('result-conf').textContent =
+      `Độ tin cậy: ${(data.confidence * 100).toFixed(1)}%`;
+    document.getElementById('conf-bar').style.width = (data.confidence * 100) + '%';
+
+    // Treatment
+    document.getElementById('treatment').textContent =
+      data.treatment_plan || '(Không có phác đồ)';
+
+    // Sources
+    const unique = [...new Set(data.sources)];
+    document.getElementById('sources').innerHTML =
+      unique.map(s => `<span class="source-tag">${s}</span>`).join('');
+
+    // Calculator
+    const calcCard = document.getElementById('calc-card');
+    const grid = document.getElementById('calc-grid');
+    grid.innerHTML = '';
+    const items = [];
+
+    if (data.lime) {
+      items.push({ val: data.lime.dolomite_kg + ' kg', lbl: 'Dolomite' });
+      items.push({ val: data.lime.agricultural_lime_kg + ' kg', lbl: 'Vôi nông nghiệp' });
+    }
+    if (data.probiotic) {
+      items.push({ val: data.probiotic.bacillus_kg + ' kg', lbl: 'Bacillus' });
+      items.push({ val: data.probiotic.em_liters + ' lít', lbl: 'EM vi sinh' });
+    }
+
+    if (items.length > 0) {
+      items.forEach(item => {
+        grid.innerHTML += `<div class="calc-item">
+          <div class="val">${item.val}</div>
+          <div class="lbl">${item.lbl}</div>
+        </div>`;
+      });
+      calcCard.style.display = 'block';
+    } else {
+      calcCard.style.display = 'none';
+    }
+
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
