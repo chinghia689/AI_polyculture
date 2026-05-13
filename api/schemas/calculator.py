@@ -22,22 +22,27 @@ class StockingRequest(BaseModel):
 
 
 class LimeRequest(BaseModel):
-    current_ph: float = Field(..., ge=0, le=14, description="pH hiện tại của ao")
-    area_ha:    float = Field(..., gt=0, le=500)
+    current_ph:    float          = Field(..., ge=0, le=14, description="pH hiện tại của ao")
+    area_ha:       float          = Field(..., gt=0, le=500)
+    farming_model: FarmingModelEnum = FarmingModelEnum.extensive
+    pond_stage:    str            = Field("stocked", pattern="^(preparation|stocked)$")
 
 
 class ProbioticRequest(BaseModel):
-    area_ha:              float = Field(..., gt=0, le=500)
-    temperature_c:        float = Field(28.0, ge=15, le=40, description="Nhiệt độ nước (°C)")
-    days_since_last_dose: int   = Field(7,    ge=0,  le=365)
-    has_disease_sign:     bool  = Field(False)
+    area_ha:              float          = Field(..., gt=0, le=500)
+    temperature_c:        float          = Field(28.0, ge=15, le=40, description="Nhiệt độ nước (°C)")
+    days_since_last_dose: int            = Field(7,    ge=0,  le=365)
+    has_disease_sign:     bool           = Field(False)
+    farming_model:        FarmingModelEnum = FarmingModelEnum.extensive
+    pond_stage:           str            = Field("stocked", pattern="^(preparation|stocked)$")
 
 
 class ScheduleRequest(BaseModel):
-    start_date:    date        = Field(default_factory=date.today)
-    phase:         FarmPhaseEnum = FarmPhaseEnum.early
-    duration_days: int         = Field(60, ge=7, le=365)
-    area_ha:       float       = Field(1.0, gt=0)
+    start_date:    date             = Field(default_factory=date.today)
+    phase:         FarmPhaseEnum    = FarmPhaseEnum.early
+    duration_days: int              = Field(60, ge=7, le=365)
+    area_ha:       float            = Field(1.0, gt=0)
+    farming_model: FarmingModelEnum = FarmingModelEnum.extensive
 
 
 class RecommendRequest(BaseModel):
@@ -49,19 +54,22 @@ class RecommendRequest(BaseModel):
     days_since_probiotic: int            = Field(7, ge=0)
     has_disease_sign:     bool           = Field(False)
     farming_model:        FarmingModelEnum = FarmingModelEnum.extensive
+    pond_stage:           str            = Field("stocked", pattern="^(preparation|stocked)$")
     phase:                FarmPhaseEnum  = FarmPhaseEnum.early
 
 
 # ── Response models ───────────────────────────────────────────────────────────
 class StockingResponse(BaseModel):
-    model:               str
-    area_ha:             float
-    shrimp_pl:           int
-    crab_juveniles:      int
-    shrimp_density_m2:   float
-    crab_density_m2:     float
-    feed_kg_per_month:   float
-    notes:               list[str]
+    model:                        str
+    area_ha:                      float
+    shrimp_pl:                    int
+    crab_juveniles:               int
+    shrimp_density_m2:            float
+    crab_density_m2:              float
+    supplement_feed_kg_per_day:   float
+    supplement_feed_kg_per_month: float
+    feed_type:                    str | None
+    notes:                        list[str]
 
 
 class LimeResponse(BaseModel):

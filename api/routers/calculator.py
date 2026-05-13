@@ -22,7 +22,10 @@ def _stocking_to_resp(r) -> StockingResponse:
         shrimp_pl=r.shrimp_pl, crab_juveniles=r.crab_juveniles,
         shrimp_density_m2=r.shrimp_density_per_m2,
         crab_density_m2=r.crab_density_per_m2,
-        feed_kg_per_month=r.feed_kg_per_month, notes=r.notes,
+        supplement_feed_kg_per_day=r.supplement_feed_kg_per_day,
+        supplement_feed_kg_per_month=r.supplement_feed_kg_per_month,
+        feed_type=getattr(r, "feed_type", None),
+        notes=r.notes,
     )
 
 
@@ -58,7 +61,11 @@ def stocking(req: StockingRequest):
 @router.post("/lime", response_model=LimeResponse)
 def lime(req: LimeRequest):
     try:
-        return _lime_to_resp(calculate_lime(req.current_ph, req.area_ha))
+        return _lime_to_resp(
+            calculate_lime(req.current_ph, req.area_ha,
+                           pond_stage=req.pond_stage,
+                           farming_model=req.farming_model)
+        )
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -70,6 +77,8 @@ def probiotic(req: ProbioticRequest):
             calculate_probiotic(
                 req.area_ha, req.temperature_c,
                 req.days_since_last_dose, req.has_disease_sign,
+                farming_model=req.farming_model,
+                pond_stage=req.pond_stage,
             )
         )
     except ValueError as e:
@@ -81,6 +90,7 @@ def schedule(req: ScheduleRequest):
     s = generate_schedule(
         req.start_date, FarmPhase(req.phase),
         req.duration_days, req.area_ha,
+        farming_model=req.farming_model,
     )
     tasks = [
         ScheduleTaskResponse(
@@ -109,11 +119,17 @@ def recommend(req: RecommendRequest):
         stocking  = _stocking_to_resp(
             calculate_stocking(req.area_ha, FarmingModel(req.farming_model))
         )
-        lime      = _lime_to_resp(calculate_lime(req.current_ph, req.area_ha))
+        lime      = _lime_to_resp(
+            calculate_lime(req.current_ph, req.area_ha,
+                           pond_stage=req.pond_stage,
+                           farming_model=req.farming_model)
+        )
         probiotic = _probiotic_to_resp(
             calculate_probiotic(
                 req.area_ha, req.temperature_c,
                 req.days_since_probiotic, req.has_disease_sign,
+                farming_model=req.farming_model,
+                pond_stage=req.pond_stage,
             )
         )
         return RecommendResponse(stocking=stocking, lime=lime, probiotic=probiotic)
