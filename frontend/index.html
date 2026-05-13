@@ -27,6 +27,12 @@
     .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
     .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: #2d3748; }
 
+    /* Input method toggle */
+    .input-method-toggle { display: flex; gap: 0; margin-bottom: 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+    .input-method-btn { flex: 1; padding: 9px 8px; border: none; background: white; font-size: 0.85rem; font-weight: 500; color: #718096; cursor: pointer; transition: all 0.15s; }
+    .input-method-btn.active { background: #1a5276; color: white; font-weight: 700; }
+    .input-method-btn:not(:last-child) { border-right: 1.5px solid #e2e8f0; }
+
     /* Upload */
     #upload-zone { border: 2px dashed #90cdf4; border-radius: 10px; padding: 32px 16px; text-align: center; cursor: pointer; transition: background 0.2s; background: #ebf8ff; }
     #upload-zone:hover, #upload-zone.drag { background: #bee3f8; }
@@ -37,6 +43,20 @@
     #preview-wrap { display: none; margin-top: 14px; text-align: center; }
     #preview-img { max-width: 100%; max-height: 260px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
     #change-btn { display: inline-block; margin-top: 8px; font-size: 0.8rem; color: #4a90d9; cursor: pointer; text-decoration: underline; }
+
+    /* Disease selection grid */
+    .disease-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .disease-card {
+      border: 2px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;
+      cursor: pointer; transition: all 0.15s; background: white;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .disease-card:hover { border-color: #90cdf4; background: #ebf8ff; }
+    .disease-card.selected { border-color: #1a5276; background: #eaf0f6; }
+    .disease-card.healthy.selected { border-color: #38a169; background: #f0fff4; }
+    .disease-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 1px; }
+    .disease-info .disease-name { font-size: 0.85rem; font-weight: 600; color: #2d3748; }
+    .disease-info .disease-symptom { font-size: 0.73rem; color: #718096; margin-top: 2px; line-height: 1.35; }
 
     /* Params */
     .params-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -154,25 +174,44 @@
 <div id="tab-diagnose" class="tab-panel active">
 
   <div class="card" id="upload-card">
-    <h2>Chụp / tải ảnh tôm hoặc cua</h2>
+    <h2>Chẩn đoán tôm / cua</h2>
 
     <div style="margin-bottom:12px">
       <span class="selector-label">Loài</span>
       <div class="pill-group" id="species-pills">
-        <div class="pill active" data-val="shrimp" onclick="selectPill('species-pills','shrimp')">🦐 Tôm sú</div>
-        <div class="pill"        data-val="crab"   onclick="selectPill('species-pills','crab')">🦀 Cua biển</div>
+        <div class="pill active" data-val="shrimp" onclick="selectSpecies('shrimp')">🦐 Tôm sú</div>
+        <div class="pill"        data-val="crab"   onclick="selectSpecies('crab')">🦀 Cua biển</div>
       </div>
     </div>
 
-    <div id="upload-zone" onclick="document.getElementById('file-input').click()">
-      <div class="icon">📷</div>
-      <p>Nhấn để chọn ảnh</p>
-      <small>hoặc kéo thả vào đây · JPG, PNG</small>
+    <!-- Input method toggle -->
+    <div class="input-method-toggle">
+      <button class="input-method-btn active" id="method-photo" onclick="selectInputMethod('photo')">📷 Chụp / tải ảnh</button>
+      <button class="input-method-btn"        id="method-symptom" onclick="selectInputMethod('symptom')">👁 Chọn triệu chứng</button>
     </div>
-    <input type="file" id="file-input" accept="image/*" capture="environment" />
-    <div id="preview-wrap">
-      <img id="preview-img" src="" alt="preview" />
-      <div id="change-btn" onclick="resetUpload()">Đổi ảnh khác</div>
+
+    <!-- Photo mode -->
+    <div id="photo-mode">
+      <div id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="icon">📷</div>
+        <p>Nhấn để chọn ảnh</p>
+        <small>hoặc kéo thả vào đây · JPG, PNG</small>
+      </div>
+      <input type="file" id="file-input" accept="image/*" capture="environment" />
+      <div id="preview-wrap">
+        <img id="preview-img" src="" alt="preview" />
+        <div id="change-btn" onclick="resetUpload()">Đổi ảnh khác</div>
+      </div>
+    </div>
+
+    <!-- Symptom selection mode -->
+    <div id="symptom-mode" style="display:none">
+      <div class="disease-grid" id="disease-grid"></div>
+      <div style="margin-top:10px">
+        <label style="font-size:0.8rem;color:#718096;display:block;margin-bottom:4px">Mô tả thêm (tuỳ chọn)</label>
+        <textarea id="extra-symptom" rows="2" placeholder="vd: tôm bơi loạn, tấp mé ao từ sáng sớm..."
+          style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;resize:none;outline:none;font-family:inherit"></textarea>
+      </div>
     </div>
   </div>
 
@@ -224,7 +263,7 @@
 
   <div class="error-box" id="error-box"></div>
   <button id="submit-btn" class="btn-primary" onclick="diagnose()" disabled>Chẩn đoán</button>
-  <div class="spinner" id="spinner" data-text-vision="Đang phân tích ảnh..." data-text-prep="Đang tính toán...">Đang phân tích ảnh...</div>
+  <div class="spinner" id="spinner" data-text-vision="Đang phân tích ảnh..." data-text-prep="Đang tính toán..." data-text-symptom="Đang tra cứu phác đồ...">Đang phân tích ảnh...</div>
 
   <div id="result">
     <div class="card" id="vision-result-card">
@@ -380,9 +419,30 @@
 
 <script>
 const API = '';
-let selectedFile = null;
-let authMode = 'login';   // 'login' | 'register'
-let currentUser = null;
+let selectedFile    = null;
+let selectedDisease = null;  // null = khỏe mạnh
+let inputMethod     = 'photo';  // 'photo' | 'symptom'
+let authMode        = 'login';
+let currentUser     = null;
+
+const DISEASE_OPTIONS = {
+  shrimp: [
+    { id: null,                   name: 'Tôm khỏe mạnh',     icon: '✅', symptom: 'Màu bình thường, bơi linh hoạt, ăn đều', healthy: true },
+    { id: 'Đen mang',             name: 'Đen mang',           icon: '🫁', symptom: 'Mang chuyển đen/nâu tối, tôm nổi đầu, thở khó' },
+    { id: 'Đốm trắng (WSSV)',     name: 'Đốm trắng WSSV',    icon: '⚪', symptom: 'Đốm trắng trên vỏ, thân ửng đỏ, bơi lờ đờ hoặc tấp mé' },
+    { id: 'Đỏ thân',              name: 'Đỏ thân',            icon: '🔴', symptom: 'Toàn thân đỏ hồng, tấp mé ao, bỏ ăn' },
+    { id: 'Vỏ mềm bất thường',   name: 'Vỏ mềm',             icon: '💧', symptom: 'Vỏ không cứng lại sau khi lột xác >2 ngày' },
+    { id: 'Ruột rỗng',           name: 'Ruột rỗng',          icon: '📭', symptom: 'Soi đường ruột trắng, không thấy thức ăn, tôm gầy yếu' },
+    { id: 'Đầu vàng (YHV)',       name: 'Đầu vàng YHV',      icon: '🟡', symptom: 'Đầu ngực vàng hoặc nhợt trắng, gan tụy teo, chết nhanh' },
+  ],
+  crab: [
+    { id: null,                   name: 'Cua khỏe mạnh',     icon: '✅', symptom: 'Mai cứng, di chuyển nhanh, không tổn thương', healthy: true },
+    { id: 'Đen mang (cua)',       name: 'Đen mang',           icon: '🫁', symptom: 'Mang đen hoặc nâu, cua yếu, nổi lên mặt nước' },
+    { id: 'Đóng rong/hà bám',    name: 'Rong/hà bám',        icon: '🐚', symptom: 'Rong xanh hoặc hà bám dày trên mai, chân bơi' },
+    { id: 'Rụng càng/gãy chân',  name: 'Rụng càng/gãy chân',icon: '🦿', symptom: 'Thiếu càng hoặc chân, vết thương hở trên đốt' },
+    { id: 'Nấm trên mai',         name: 'Nấm mai',            icon: '🍄', symptom: 'Đốm trắng/nâu bất thường trên mai, bề mặt bị ăn mòn' },
+  ],
+};
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (function init() {
@@ -418,6 +478,62 @@ function getPill(groupId) {
   return active ? active.dataset.val : null;
 }
 
+// ── Input method (photo / symptom) ────────────────────────────────────────
+function selectInputMethod(method) {
+  inputMethod = method;
+  document.getElementById('method-photo').classList.toggle('active', method === 'photo');
+  document.getElementById('method-symptom').classList.toggle('active', method === 'symptom');
+  document.getElementById('photo-mode').style.display   = method === 'photo' ? 'block' : 'none';
+  document.getElementById('symptom-mode').style.display = method === 'symptom' ? 'block' : 'none';
+
+  if (method === 'symptom') {
+    renderDiseaseGrid(getPill('species-pills') || 'shrimp');
+    // In symptom mode, enable submit even without disease selection (khỏe mạnh là default)
+    const isPrep = getPill('stage-pills') === 'preparation';
+    if (!isPrep) document.getElementById('submit-btn').disabled = false;
+  } else {
+    // Back to photo mode: disable submit if no file
+    const isPrep = getPill('stage-pills') === 'preparation';
+    if (!isPrep) document.getElementById('submit-btn').disabled = !selectedFile;
+  }
+
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+}
+
+// ── Species change ─────────────────────────────────────────────────────────
+function selectSpecies(val) {
+  selectPill('species-pills', val);
+  if (inputMethod === 'symptom') renderDiseaseGrid(val);
+}
+
+// ── Disease grid ───────────────────────────────────────────────────────────
+function renderDiseaseGrid(species) {
+  const options = DISEASE_OPTIONS[species] || DISEASE_OPTIONS.shrimp;
+  const grid = document.getElementById('disease-grid');
+  grid.innerHTML = options.map((d, i) => `
+    <div class="disease-card${d.healthy ? ' healthy' : ''}${selectedDisease === d.id && !(d.healthy && selectedDisease !== null) ? ' selected' : ''}"
+         id="dcard-${i}" onclick="selectDisease(${JSON.stringify(d.id)}, ${i})">
+      <span class="disease-icon">${d.icon}</span>
+      <div class="disease-info">
+        <div class="disease-name">${d.name}</div>
+        <div class="disease-symptom">${d.symptom}</div>
+      </div>
+    </div>`).join('');
+
+  // Default select: healthy
+  if (selectedDisease === undefined) selectDisease(null, 0);
+}
+
+function selectDisease(diseaseId, cardIdx) {
+  selectedDisease = diseaseId;
+  document.querySelectorAll('.disease-card').forEach((c, i) => {
+    c.classList.toggle('selected', i === cardIdx);
+  });
+  const isPrep = getPill('stage-pills') === 'preparation';
+  if (!isPrep) document.getElementById('submit-btn').disabled = false;
+}
+
 function toggleAdvanced() {
   const el = document.getElementById('advanced-params');
   const lbl = document.getElementById('adv-toggle');
@@ -430,10 +546,14 @@ function selectStage(val) {
   selectPill('stage-pills', val);
   const isPrep = val === 'preparation';
   document.getElementById('upload-card').style.display  = isPrep ? 'none' : 'block';
-  document.getElementById('submit-btn').disabled         = isPrep ? false : !selectedFile;
-  document.getElementById('submit-btn').textContent      = isPrep ? 'Tính liều cải tạo ao' : 'Chẩn đoán';
+  document.getElementById('submit-btn').textContent     = isPrep ? 'Tính liều cải tạo ao' : 'Chẩn đoán';
+  if (isPrep) {
+    document.getElementById('submit-btn').disabled = false;
+  } else {
+    document.getElementById('submit-btn').disabled = inputMethod === 'photo' ? !selectedFile : false;
+  }
   const sp = document.getElementById('spinner');
-  sp.textContent = isPrep ? sp.dataset.textPrep : sp.dataset.textVision;
+  sp.textContent = isPrep ? sp.dataset.textPrep : (inputMethod === 'symptom' ? sp.dataset.textSymptom : sp.dataset.textVision);
   document.getElementById('result').style.display = 'none';
   document.getElementById('error-box').style.display = 'none';
 }
@@ -476,8 +596,9 @@ function resetUpload() {
 
 // ── Diagnose ──────────────────────────────────────────────────────────────
 async function diagnose() {
-  const isPrep = getPill('stage-pills') === 'preparation';
-  if (!isPrep && !selectedFile) return;
+  const isPrep   = getPill('stage-pills') === 'preparation';
+  const isSymptom = inputMethod === 'symptom';
+  if (!isPrep && !isSymptom && !selectedFile) return;
 
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
@@ -490,22 +611,44 @@ async function diagnose() {
 
   try {
     let data;
-    if (isPrep) {
-      const body = { farming_model: getPill('farming-pills') || 'extensive', pond_stage: 'preparation' };
+
+    if (isPrep || isSymptom) {
+      // JSON endpoint: cải tạo ao hoặc chọn triệu chứng bằng mắt
+      const body = {
+        farming_model: getPill('farming-pills') || 'extensive',
+        pond_stage:    isPrep ? 'preparation' : 'stocked',
+      };
+      if (isSymptom && selectedDisease) body.disease = selectedDisease;
+
+      // Extra symptom text — thêm vào disease string nếu có
+      const extra = document.getElementById('extra-symptom')?.value?.trim();
+      if (isSymptom && extra) {
+        body.disease = body.disease ? `${body.disease} — ${extra}` : extra;
+      }
+
       ['ph','salinity','temperature','area_ha','do_mgl','alkalinity','nh3_mgl','no2_mgl','transparency_cm'].forEach(id => {
         const v = document.getElementById(id).value;
         if (v) body[id] = parseFloat(v);
       });
       const dc = document.getElementById('days_cultured').value;
       if (dc) body['days_cultured'] = parseInt(dc);
+
       const res = await fetch(`${API}/api/v1/diagnose/`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify(body),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Lỗi ${res.status}`); }
       data = await res.json();
-      showPrepResult(data);
+
+      if (isPrep) {
+        showPrepResult(data);
+      } else {
+        // Symptom mode: hiện kết quả như vision nhưng không có ảnh/confidence
+        showSymptomResult(data, selectedDisease);
+      }
+
     } else {
+      // Photo mode: gửi ảnh lên vision endpoint
       const form = new FormData();
       form.append('file', selectedFile);
       form.append('species', getPill('species-pills') || 'shrimp');
@@ -530,6 +673,38 @@ async function diagnose() {
     document.getElementById('spinner').style.display = 'none';
     btn.disabled = false;
   }
+}
+
+function showSymptomResult(data, diseaseId) {
+  // Hiện kết quả chẩn đoán dựa trên triệu chứng mắt thường (không có ảnh/confidence)
+  const isHealthy = !diseaseId;
+  const species   = getPill('species-pills') === 'crab' ? 'Cua' : 'Tôm';
+  const options   = DISEASE_OPTIONS[getPill('species-pills') || 'shrimp'];
+  const option    = options.find(d => d.id === diseaseId);
+
+  document.getElementById('result-badge').style.display   = 'block';
+  document.getElementById('result-disease').style.display = 'block';
+  document.getElementById('result-conf').style.display    = 'block';
+  document.querySelector('.conf-bar-wrap').style.display  = 'none';
+  document.getElementById('vision-result-card').style.display = 'block';
+  document.getElementById('treatment-title').textContent = 'Phác đồ điều trị';
+
+  const badge = document.getElementById('result-badge');
+  badge.style = '';
+  badge.textContent = isHealthy ? `✓ ${species} khỏe mạnh` : `⚠ Triệu chứng: ${option?.name || diseaseId}`;
+  badge.className = 'badge ' + (isHealthy ? 'healthy' : 'sick');
+
+  document.getElementById('result-disease').textContent = option ? option.name : (diseaseId || '');
+  document.getElementById('result-conf').textContent = '👁 Chẩn đoán bằng mắt thường';
+
+  document.getElementById('treatment').textContent = data.treatment_plan || '(Không có phác đồ)';
+  const unique = [...new Set(data.sources || [])];
+  document.getElementById('sources').innerHTML = unique.map(s => `<span class="source-tag">${s}</span>`).join('');
+
+  showWaterQuality(data.water_quality);
+  showCalc(data);
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
 }
 
 function showPrepResult(data) {
