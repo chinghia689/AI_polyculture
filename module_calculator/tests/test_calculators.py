@@ -40,20 +40,35 @@ class TestLime:
         assert r.warning is None
 
     def test_critical_acid(self):
-        r = calculate_lime(3.5, 1.0)
+        # Bán thâm canh — liều đầy đủ
+        r = calculate_lime(3.5, 1.0, farming_model="semi_intensive")
         assert r.dolomite_kg == 3000
         assert r.warning is not None
         assert "NGUY HIỂM" in r.warning or "CỰC KỲ" in r.warning
 
+    def test_critical_acid_extensive(self):
+        # Quảng canh ao rừng — liều thấp hơn nhiều
+        r = calculate_lime(3.5, 1.0, farming_model="extensive")
+        assert r.dolomite_kg == 500
+        assert r.agricultural_lime_kg == 0   # không dùng vôi mạnh cho ao rừng
+        assert r.warning is not None
+
     def test_alkaline(self):
-        r = calculate_lime(9.0, 2.0)
-        assert r.gypsum_kg == 1000         # 500 kg/ha × 2 ha
+        r = calculate_lime(9.0, 2.0, farming_model="semi_intensive")
+        assert r.gypsum_kg == 1000           # 500 kg/ha × 2 ha
         assert r.dolomite_kg == 0
 
     def test_slightly_acid_1ha(self):
-        r = calculate_lime(6.2, 1.0)
+        # Bán thâm canh — liều đầy đủ
+        r = calculate_lime(6.2, 1.0, farming_model="semi_intensive")
         assert r.dolomite_kg == 500
         assert r.agricultural_lime_kg == 300
+
+    def test_slightly_acid_extensive(self):
+        # Quảng canh — liều thấp, chỉ dolomite
+        r = calculate_lime(6.2, 1.0, farming_model="extensive")
+        assert r.dolomite_kg == 80
+        assert r.agricultural_lime_kg == 0
 
     def test_area_scaling(self):
         r1 = calculate_lime(5.0, 1.0)

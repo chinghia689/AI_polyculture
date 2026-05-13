@@ -64,7 +64,7 @@ async def vision_diagnose(
     lime_result = probiotic_result = None
     try:
         if ph is not None and area_ha:
-            lr = calculate_lime(ph, area_ha, pond_stage=pond_stage)
+            lr = calculate_lime(ph, area_ha, pond_stage=pond_stage, farming_model=farming_model)
             lime_result = {
                 "dolomite_kg":          lr.dolomite_kg,
                 "agricultural_lime_kg": lr.agricultural_lime_kg,

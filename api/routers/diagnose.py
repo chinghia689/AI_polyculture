@@ -30,7 +30,7 @@ def diagnose(req: DiagnoseRequest):
 
     try:
         if req.ph is not None and req.area_ha:
-            lr = calculate_lime(req.ph, req.area_ha, pond_stage=req.pond_stage)
+            lr = calculate_lime(req.ph, req.area_ha, pond_stage=req.pond_stage, farming_model=req.farming_model)
             lime_result = {
                 "dolomite_kg":          lr.dolomite_kg,
                 "agricultural_lime_kg": lr.agricultural_lime_kg,
