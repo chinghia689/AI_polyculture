@@ -22,7 +22,8 @@ _LIME_TABLE_SEMI = [
     (4.0,  5.0, 2000, 1500, 0,   "acidic"),
     (5.0,  6.0, 1000,  750, 0,   "acidic"),
     (6.0,  6.5,  500,  300, 0,   "slightly_acidic"),
-    (6.5,  8.2,    0,    0, 0,   "ideal"),
+    (6.5,  7.0,  200,  100, 0,   "below_target"),   # tôm sú cần 7.5–8.0
+    (7.0,  8.2,    0,    0, 0,   "ideal"),
     (8.2,  8.8,    0,    0, 200, "slightly_alkaline"),
     (8.8, 14.0,    0,    0, 500, "alkaline"),
 ]
@@ -37,7 +38,8 @@ _LIME_TABLE_EXTENSIVE = [
     (4.0,  5.0, 300,  0, 0,   "acidic"),
     (5.0,  6.0, 150,  0, 0,   "acidic"),
     (6.0,  6.5,  80,  0, 0,   "slightly_acidic"),
-    (6.5,  8.2,   0,  0, 0,   "ideal"),
+    (6.5,  7.0,  50,  0, 0,   "below_target"),    # tôm sú cần 7.5–8.0
+    (7.0,  8.2,   0,  0, 0,   "ideal"),
     (8.2,  8.8,   0,  0, 80,  "slightly_alkaline"),
     (8.8, 14.0,   0,  0, 200, "alkaline"),
 ]
@@ -46,6 +48,7 @@ _STATUS_LABEL = {
     "critical_acid":     "Nguy hiểm — pH quá thấp, tôm cua chết hàng loạt",
     "acidic":            "Chua — cần xử lý gấp",
     "slightly_acidic":   "Hơi chua — cần điều chỉnh",
+    "below_target":      "Dưới mức lý tưởng — tôm sú cần pH 7.5–8.0",
     "ideal":             "Lý tưởng — không cần xử lý",
     "slightly_alkaline": "Hơi kiềm — theo dõi thêm",
     "alkaline":          "Kiềm cao — cần hạ pH",
@@ -102,6 +105,9 @@ def calculate_lime(
         notes.append("Đo lại pH sau 24 tiếng trước khi tạt thêm")
     elif status_key == "slightly_acidic":
         notes.append("Dolomite nâng pH từ từ, an toàn cho hệ sinh thái")
+    elif status_key == "below_target":
+        notes.append("pH còn thấp hơn mức lý tưởng — tạt Dolomite nhẹ, đo lại sau 2 ngày")
+        notes.append("Không nâng pH quá 0.3 đơn vị/ngày tránh sốc tôm/cua")
     elif status_key == "ideal":
         if is_extensive:
             notes.append("Duy trì bằng cách theo dõi pH sau mỗi con triều")

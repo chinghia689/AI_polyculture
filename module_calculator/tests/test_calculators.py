@@ -39,6 +39,23 @@ class TestLime:
         assert r.gypsum_kg == 0
         assert r.warning is None
 
+    def test_below_target_extensive(self):
+        # pH 6.5–7.0 nên gợi ý Dolomite nhẹ cho quảng canh
+        r = calculate_lime(6.8, 1.0, farming_model="extensive")
+        assert r.dolomite_kg == 50
+        assert r.agricultural_lime_kg == 0
+        assert "Dưới mức lý tưởng" in r.status
+
+    def test_below_target_semi(self):
+        r = calculate_lime(6.8, 1.0, farming_model="semi_intensive")
+        assert r.dolomite_kg == 200
+        assert r.agricultural_lime_kg == 100
+
+    def test_ph_65_extensive_now_gets_lime(self):
+        # pH 6.5 trước đây = 0 kg (bug), giờ = 50 kg/ha
+        r = calculate_lime(6.5, 1.0, farming_model="extensive")
+        assert r.dolomite_kg == 50
+
     def test_critical_acid(self):
         # Bán thâm canh — liều đầy đủ
         r = calculate_lime(3.5, 1.0, farming_model="semi_intensive")
