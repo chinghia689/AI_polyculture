@@ -1,7 +1,7 @@
 import os
 from functools import lru_cache
 
-import anthropic
+from openai import OpenAI
 
 from module_rag.src.retrieval.retriever import retrieve
 
@@ -22,15 +22,15 @@ Nguyên tắc trả lời:
 
 
 @lru_cache(maxsize=1)
-def _get_client() -> anthropic.Anthropic:
-    return anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+def _get_client() -> OpenAI:
+    return OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
 
 
 def ask(question: str, context_docs: list[dict] | None = None) -> dict:
     if context_docs is None:
         context_docs = retrieve(question, k=4)
 
-    relevant = [d for d in context_docs if d["score"] > 0.2]
+    relevant = [d for d in context_docs if d.get("rrf_score", 0) > 0 or d.get("score", 0) > 0.2]
     context_text = "\n\n---\n\n".join(
         f"[Nguồn: {d['source']}]\n{d['content']}"
         for d in relevant
@@ -44,15 +44,17 @@ Tài liệu kỹ thuật tham khảo:
 Hãy trả lời dựa trên tài liệu trên và kiến thức chuyên môn."""
 
     client   = _get_client()
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
+    response = client.chat.completions.create(
+        model="gpt-5.1",
+        max_completion_tokens=1024,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user",   "content": user_message},
+        ],
     )
 
     return {
-        "answer":         response.content[0].text,
+        "answer":         response.choices[0].message.content,
         "sources":        [d["source"] for d in relevant],
         "context_chunks": len(relevant),
     }
