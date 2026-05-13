@@ -1,0 +1,33 @@
+# Python
+venv/
+env/
+.venv
+ENV/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Env
+.env
+
+# Data & models
+data/
+module_rag/data/vectordb/
+module_vision/models/
+*.pt
+*.pth
+*.onnx
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
