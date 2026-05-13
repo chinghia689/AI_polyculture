@@ -123,11 +123,13 @@ async def vision_diagnose(
             fm = FarmingModel(farming_model)
             sr = calculate_stocking(area_ha, fm)
             stocking_result = {
-                "shrimp_pl":             sr.shrimp_pl,
-                "crab_juveniles":        sr.crab_juveniles,
-                "shrimp_density_per_m2": sr.shrimp_density_per_m2,
-                "crab_density_per_m2":   sr.crab_density_per_m2,
-                "feed_kg_per_month":     sr.feed_kg_per_month,
+                "shrimp_pl":                   sr.shrimp_pl,
+                "crab_juveniles":              sr.crab_juveniles,
+                "shrimp_density_per_m2":       sr.shrimp_density_per_m2,
+                "crab_density_per_m2":         sr.crab_density_per_m2,
+                "supplement_feed_kg_per_day":  sr.supplement_feed_kg_per_day,
+                "supplement_feed_kg_per_month": sr.supplement_feed_kg_per_month,
+                "feed_type":                   sr.feed_type,
             }
         except (ValueError, KeyError):
             pass

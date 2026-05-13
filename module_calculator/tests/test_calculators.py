@@ -13,7 +13,7 @@ class TestStocking:
         r = calculate_stocking(1.0, FarmingModel.EXTENSIVE)
         assert r.shrimp_pl == 50_000        # 5 PL/m² × 10,000 m²
         assert r.crab_juveniles == 3_000    # 0.3 con/m²
-        assert r.feed_kg_per_month > 0
+        assert r.supplement_feed_kg_per_month > 0
 
     def test_semi_intensive_2ha(self):
         r = calculate_stocking(2.0, FarmingModel.SEMI_INTENSIVE)

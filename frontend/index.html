@@ -566,6 +566,8 @@
     if (data.stocking) {
       items.push({ val: data.stocking.shrimp_pl.toLocaleString('vi-VN') + ' con', lbl: 'Tôm sú PL12–15' });
       items.push({ val: data.stocking.crab_juveniles.toLocaleString('vi-VN') + ' con', lbl: 'Cua biển giống' });
+      if (data.stocking.supplement_feed_kg_per_day)
+        items.push({ val: data.stocking.supplement_feed_kg_per_day + ' kg/ngày', lbl: 'Thức ăn bổ sung' });
     }
 
     if (items.length > 0) {

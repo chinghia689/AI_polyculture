@@ -56,7 +56,10 @@ def _format_calc_block(calc: dict) -> str:
         lines.append("MẬT ĐỘ THẢ GIỐNG (đã tính theo mô hình nuôi và diện tích ao):")
         lines.append(f"  • Tôm sú (post PL12–15): {stocking['shrimp_pl']:,} con (mật độ {stocking['shrimp_density_per_m2']} con/m²)")
         lines.append(f"  • Cua biển (giống 3–5 cm): {stocking['crab_juveniles']:,} con (mật độ {stocking['crab_density_per_m2']} con/m²)")
-        lines.append(f"  • Thức ăn ước tính: {stocking['feed_kg_per_month']} kg/tháng")
+        lines.append(f"  • Thức ăn bổ sung: {stocking['supplement_feed_kg_per_day']} kg/ngày ({stocking['supplement_feed_kg_per_month']:.0f} kg/tháng)")
+        lines.append(f"    (Lưu ý: đây là thức ăn công nghiệp mua về, không tính thức ăn tự nhiên trong ao)")
+        if stocking.get("feed_type"):
+            lines.append(f"  • Loại thức ăn: {stocking['feed_type']}")
 
     wq = calc.get("water_quality")
     if wq and wq.get("alerts"):
