@@ -57,6 +57,7 @@ async def vision_diagnose(
 
     from module_calculator.src.lime_calculator import calculate_lime
     from module_calculator.src.probiotic_calculator import calculate_probiotic
+    from module_calculator.src.stocking_calculator import FarmingModel, calculate_stocking
     from module_calculator.src.water_quality import assess_water_quality
     from module_rag.src.generation.chain import ask, build_diagnosis_query
 
@@ -116,7 +117,27 @@ async def vision_diagnose(
         water_quality=wq_dict,
     )
 
-    calc_results = {"lime": lime_result, "probiotic": probiotic_result, "water_quality": wq_dict}
+    stocking_result = None
+    if area_ha:
+        try:
+            fm = FarmingModel(farming_model)
+            sr = calculate_stocking(area_ha, fm)
+            stocking_result = {
+                "shrimp_pl":             sr.shrimp_pl,
+                "crab_juveniles":        sr.crab_juveniles,
+                "shrimp_density_per_m2": sr.shrimp_density_per_m2,
+                "crab_density_per_m2":   sr.crab_density_per_m2,
+                "feed_kg_per_month":     sr.feed_kg_per_month,
+            }
+        except (ValueError, KeyError):
+            pass
+
+    calc_results = {
+        "lime":          lime_result,
+        "probiotic":     probiotic_result,
+        "stocking":      stocking_result,
+        "water_quality": wq_dict,
+    }
     try:
         rag_result = ask(query, calculator_results=calc_results)
     except Exception as e:
@@ -132,5 +153,6 @@ async def vision_diagnose(
         sources=        rag_result["sources"],
         lime=          lime_result,
         probiotic=     probiotic_result,
+        stocking=      stocking_result,
         water_quality= wq_dict,
     )

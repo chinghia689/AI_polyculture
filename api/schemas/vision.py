@@ -22,4 +22,5 @@ class VisionDiagnoseResponse(BaseModel):
     # Calculator
     lime:          dict | None
     probiotic:     dict | None
+    stocking:      dict | None
     water_quality: dict | None

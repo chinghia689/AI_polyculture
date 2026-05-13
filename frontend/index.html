@@ -555,13 +555,17 @@
     const items = [];
 
     if (data.lime) {
-      if (data.lime.dolomite_kg)          items.push({ val: data.lime.dolomite_kg + ' kg',          lbl: 'Dolomite' });
-      if (data.lime.agricultural_lime_kg) items.push({ val: data.lime.agricultural_lime_kg + ' kg', lbl: 'Vôi nông nghiệp' });
-      if (data.lime.gypsum_kg)            items.push({ val: data.lime.gypsum_kg + ' kg',            lbl: 'Thạch cao' });
+      if (data.lime.dolomite_kg)          items.push({ val: data.lime.dolomite_kg.toLocaleString('vi-VN') + ' kg',          lbl: 'Dolomite' });
+      if (data.lime.agricultural_lime_kg) items.push({ val: data.lime.agricultural_lime_kg.toLocaleString('vi-VN') + ' kg', lbl: 'Vôi nông nghiệp' });
+      if (data.lime.gypsum_kg)            items.push({ val: data.lime.gypsum_kg.toLocaleString('vi-VN') + ' kg',            lbl: 'Thạch cao' });
     }
     if (data.probiotic) {
       items.push({ val: data.probiotic.bacillus_kg + ' kg', lbl: 'Bacillus' });
       items.push({ val: data.probiotic.em_liters + ' lít',  lbl: 'EM vi sinh' });
+    }
+    if (data.stocking) {
+      items.push({ val: data.stocking.shrimp_pl.toLocaleString('vi-VN') + ' con', lbl: 'Tôm sú PL12–15' });
+      items.push({ val: data.stocking.crab_juveniles.toLocaleString('vi-VN') + ' con', lbl: 'Cua biển giống' });
     }
 
     if (items.length > 0) {

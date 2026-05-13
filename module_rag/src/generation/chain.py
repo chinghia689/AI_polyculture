@@ -32,7 +32,7 @@ def _format_calc_block(calc: dict) -> str:
 
     lime = calc.get("lime")
     if lime:
-        lines.append("LIỀU VÔI (đã tính theo pH thực đo và giai đoạn ao — dùng đúng số này):")
+        lines.append("LIỀU VÔI (đã tính theo pH thực đo và giai đoạn ao):")
         if lime.get("dolomite_kg"):
             lines.append(f"  • Dolomite: {lime['dolomite_kg']} kg (toàn ao)")
         if lime.get("agricultural_lime_kg"):
@@ -44,12 +44,19 @@ def _format_calc_block(calc: dict) -> str:
 
     probiotic = calc.get("probiotic")
     if probiotic:
-        lines.append("LIỀU MEN VI SINH (đã điều chỉnh theo mô hình nuôi và giai đoạn ao — dùng đúng số này):")
+        lines.append("LIỀU MEN VI SINH (đã điều chỉnh theo mô hình nuôi và giai đoạn ao):")
         lines.append(f"  • Bacillus dạng bột: {probiotic['bacillus_kg']} kg")
         lines.append(f"  • EM gốc (pha 1:100): {probiotic['em_liters']} lít")
         lines.append(f"  • Thời điểm tạt: {probiotic.get('apply_time', '18:00–20:00')}")
         nd = probiotic.get("next_dose_day", 7)
         lines.append(f"  • Tần suất: {'hàng ngày' if nd <= 1 else f'mỗi {nd} ngày'}")
+
+    stocking = calc.get("stocking")
+    if stocking:
+        lines.append("MẬT ĐỘ THẢ GIỐNG (đã tính theo mô hình nuôi và diện tích ao):")
+        lines.append(f"  • Tôm sú (post PL12–15): {stocking['shrimp_pl']:,} con (mật độ {stocking['shrimp_density_per_m2']} con/m²)")
+        lines.append(f"  • Cua biển (giống 3–5 cm): {stocking['crab_juveniles']:,} con (mật độ {stocking['crab_density_per_m2']} con/m²)")
+        lines.append(f"  • Thức ăn ước tính: {stocking['feed_kg_per_month']} kg/tháng")
 
     wq = calc.get("water_quality")
     if wq and wq.get("alerts"):
@@ -94,8 +101,11 @@ def ask(
 =================================
 """
             calc_instruction = (
-                "\nQUAN TRỌNG: Khi nêu liều vôi và men vi sinh trong phác đồ, "
-                "sử dụng CHÍNH XÁC các số đã tính ở trên. Không tự tính lại."
+                "\nQUAN TRỌNG: Trong phác đồ, PHẢI ghi lại CON SỐ CỤ THỂ từ phần "
+                "'KẾT QUẢ TÍNH TOÁN TỰ ĐỘNG' — ví dụ: 'Tạt 3.750 kg Dolomite', "
+                "'Thả 25.000 con tôm PL12'. "
+                "Tuyệt đối KHÔNG viết 'dùng liều đã tính ở trên' hay 'theo liều tính sẵn' — "
+                "người dùng cần thấy số ngay trong phác đồ mà không cần tra thêm."
             )
 
     user_message = f"""Câu hỏi: {question}
