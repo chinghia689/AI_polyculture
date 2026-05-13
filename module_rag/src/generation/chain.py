@@ -121,7 +121,7 @@ Hãy trả lời dựa trên tài liệu trên và kiến thức chuyên môn.{c
     client   = _get_client()
     response = client.chat.completions.create(
         model="gpt-5.1",
-        max_completion_tokens=1024,
+        max_completion_tokens=3000,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user",   "content": user_message},
