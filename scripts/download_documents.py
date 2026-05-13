@@ -102,6 +102,51 @@ DOCUMENTS = [
         ],
         "manual": None,
     },
+    {
+        "filename": "09_vi_rimf_tom_su_cua_bien_ca_hoi_2024.pdf",
+        "title": "Kỹ thuật nuôi thương phẩm tôm sú, cua biển và cá hói",
+        "source": "RIMF",
+        "urls": [
+            "https://www.rimf.org.vn/Media/Default/Bantin/2024/%E1%BA%A4n%20ph%E1%BA%A9m%20qu%C3%BD%204.2024-2.pdf",
+        ],
+        "manual": None,
+    },
+    {
+        "filename": "10_vi_rimf_tom_su_ca_mang_ben_tre_2025.pdf",
+        "title": "Kỹ thuật nuôi tôm sú kết hợp cá măng trong ao đất",
+        "source": "RIMF",
+        "urls": [
+            "https://www.rimf.org.vn/Media/Default/AnPham/%E1%BA%A4n%20ph%E1%BA%A9m%20qu%C3%BD%202.2025.pdf",
+        ],
+        "manual": None,
+    },
+    {
+        "filename": "11_vi_ria2_tom_lua_dbscl_2013.pdf",
+        "title": "Nuôi tôm-lúa ĐBSCL: hiện trạng, bệnh và năng suất tôm/cua/cá",
+        "source": "RIA2",
+        "urls": [
+            "https://vienthuysan2.org.vn/wp-content/uploads/2022/05/pdf-1.pdf",
+        ],
+        "manual": None,
+    },
+    {
+        "filename": "12_vi_ria2_benh_tom_dbscl_2019.pdf",
+        "title": "Sự hiện diện của WSSV, Vibrio parahaemolyticus và EHP trên tôm giống và tôm nuôi nước lợ ở ĐBSCL",
+        "source": "RIA2",
+        "urls": [
+            "https://vienthuysan2.org.vn/wp-content/uploads/2022/05/pdf-16.pdf",
+        ],
+        "manual": None,
+    },
+    {
+        "filename": "13_vi_ria2_wssv_ahpnd_ehp_dbscl_2021.pdf",
+        "title": "Sự hiện diện của WSSV, Vibrio parahaemolyticus và EHP trên tôm giống cung cấp cho ĐBSCL và tôm nuôi thương phẩm",
+        "source": "RIA2",
+        "urls": [
+            "https://vienthuysan2.org.vn/wp-content/uploads/2022/07/TCNC_So-21-2021-2.pdf",
+        ],
+        "manual": None,
+    },
 ]
 
 # Headers giả lập Chrome để qua rate limiter của nhiều trang

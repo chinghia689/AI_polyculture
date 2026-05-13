@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import calculator, diagnose
+from api.routers import calculator, diagnose, vision
 
 load_dotenv()
 
@@ -13,8 +13,10 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     # Preload embedding model + vectordb khi khởi động
     from module_rag.src.retrieval.retriever import _get_collection, _get_model
+    from module_vision.predictor import _get_model as _get_vision_model
     _get_model()
     _get_collection()
+    _get_vision_model()
     yield
 
 
@@ -34,6 +36,7 @@ app.add_middleware(
 
 app.include_router(calculator.router, prefix="/api/v1")
 app.include_router(diagnose.router,   prefix="/api/v1")
+app.include_router(vision.router,     prefix="/api/v1")
 
 
 @app.get("/", tags=["Health"])

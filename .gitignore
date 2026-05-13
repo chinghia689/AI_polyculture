@@ -15,7 +15,10 @@ build/
 # Data & models
 data/
 module_rag/data/vectordb/
+module_rag/data/documents/
+module_vision/data/
 module_vision/models/
+runs/
 *.pt
 *.pth
 *.onnx
