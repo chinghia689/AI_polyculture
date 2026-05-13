@@ -54,7 +54,7 @@ class TestNH3:
     def test_danger(self):
         r = assess_water_quality(nh3_mgl=0.5)
         assert r.overall_status == "danger"
-        assert "zeolite" in r.priority_actions[0]
+        assert "zeolite" in r.priority_actions[0].lower()
 
 
 class TestNO2:
@@ -105,7 +105,7 @@ class TestCombined:
     def test_priority_actions_danger_first(self):
         r = assess_water_quality(do_mgl=3.0, nh3_mgl=0.5)
         # NH3 danger action should come before DO warning action
-        assert "zeolite" in r.priority_actions[0]
+        assert "zeolite" in r.priority_actions[0].lower()
 
     def test_multiple_ok(self):
         r = assess_water_quality(do_mgl=6.0, alkalinity=100, nh3_mgl=0.05)

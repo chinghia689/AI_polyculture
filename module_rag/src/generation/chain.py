@@ -32,10 +32,16 @@ Ví dụ đúng:
   • Cám gạo — bổ sung chất hữu cơ khi gây màu nước tự nhiên
 Nếu sản phẩm có nhiều tên thương mại phổ biến, có thể ghi thêm: "(hay còn gọi: ...)"
 
+Tần suất đo sau xử lý:
+Sau mỗi bước xử lý, PHẢI ghi rõ: "Đo lại [tên thông số] sau [X tiếng/ngày]" và mục tiêu cần đạt.
+Nếu có dữ liệu "Tần suất đo lại" từ phần KẾT QUẢ TÍNH TOÁN, dùng nguyên con số đó — không diễn đạt lại chung chung.
+Ví dụ đúng: "Đo lại DO sau 2 tiếng, mục tiêu ≥ 4 mg/L trước khi cho ăn lại."
+Ví dụ sai: "Cần theo dõi thường xuyên" (quá mơ hồ, nông dân không biết khi nào đo).
+
 Định dạng trả lời:
 1. Đánh giá tình trạng
 2. Xử lý ngay (trong 24 giờ)
-3. Theo dõi sau xử lý
+3. Theo dõi sau xử lý — ghi rõ đo cái gì, sau bao lâu, đạt bao nhiêu thì ổn
 4. Phòng ngừa lâu dài"""
 
 
@@ -88,11 +94,17 @@ def _format_calc_block(calc: dict) -> str:
             for a in danger:
                 lines.append(f"  ⚠ {a['label']} = {a['value']} {a['unit']}: {a['message']}")
                 if a.get("action"):
-                    lines.append(f"     → {a['action']}")
+                    lines.append(f"     → Xử lý: {a['action']}")
+                if a.get("recheck"):
+                    lines.append(f"     → Tần suất đo lại: {a['recheck']}")
         if warn:
             lines.append("THÔNG SỐ CẦN THEO DÕI:")
             for a in warn:
                 lines.append(f"  ! {a['label']} = {a['value']} {a['unit']}: {a['message']}")
+                if a.get("action"):
+                    lines.append(f"     → Xử lý: {a['action']}")
+                if a.get("recheck"):
+                    lines.append(f"     → Tần suất đo lại: {a['recheck']}")
 
     return "\n".join(lines)
 
