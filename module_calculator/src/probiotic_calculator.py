@@ -34,19 +34,34 @@ def _urgency(days_since: int) -> tuple[float, int]:
     return 1.8, 1              # quá lâu → liều cao, tạt lại ngay
 
 
+# Hệ số theo mô hình canh tác
+# extensive: ao rừng ngập mặn, thay nước triều → vi sinh bị pha loãng nhanh → liều thấp hơn
+# semi_intensive: ao kín, ít thay nước → liều chuẩn
+_FARMING_FACTOR = {"extensive": 0.4, "semi_intensive": 1.0}
+
+# Hệ số theo giai đoạn ao
+# preparation: cải tạo ao trước khi thả → tăng liều để xử lý đáy triệt để
+# stocked: tôm đang nuôi → liều chuẩn
+_STAGE_FACTOR = {"preparation": 1.5, "stocked": 1.0}
+
+
 def calculate_probiotic(
     area_ha: float,
     temperature_c: float = 28.0,
     days_since_last_dose: int = 7,
     has_disease_sign: bool = False,
+    farming_model: str = "extensive",
+    pond_stage: str = "stocked",
 ) -> ProbioticResult:
     if area_ha <= 0:
         raise ValueError("Diện tích ao phải > 0")
 
-    temp_factor = next(
+    temp_factor    = next(
         (v for (lo, hi), v in _TEMP_FACTOR.items() if lo <= temperature_c < hi),
         1.0,
     )
+    farming_factor = _FARMING_FACTOR.get(farming_model, 1.0)
+    stage_factor   = _STAGE_FACTOR.get(pond_stage, 1.0)
 
     urgency_factor, next_dose_day = _urgency(days_since_last_dose)
 
@@ -55,14 +70,18 @@ def calculate_probiotic(
     if has_disease_sign:
         next_dose_day = 1
 
-    bacillus = _BASE_BACILLUS * temp_factor * urgency_factor * disease_factor * area_ha
-    em = _BASE_EM_LITERS * temp_factor * urgency_factor * disease_factor * area_ha
+    bacillus = _BASE_BACILLUS * temp_factor * urgency_factor * disease_factor * farming_factor * stage_factor * area_ha
+    em = _BASE_EM_LITERS * temp_factor * urgency_factor * disease_factor * farming_factor * stage_factor * area_ha
 
     notes = [
         "Hoà tan men vi sinh vào nước ao (lấy nước ao, không dùng nước máy có Clo)",
         "Tắt quạt nước / sục khí 30 phút trước khi tạt để vi khuẩn định cư",
         "Bật lại sục khí sau 1 tiếng",
     ]
+    if pond_stage == "preparation":
+        notes.insert(0, "Giai đoạn cải tạo ao: tăng liều vi sinh 1.5x để xử lý đáy và phân hủy mùn bã")
+    if farming_model == "extensive":
+        notes.append("Mô hình quảng canh: ao thông triều — tạt vi sinh sau khi đóng cống ít nhất 12 giờ")
     if has_disease_sign:
         notes.insert(0, "CHẾ ĐỘ KHẨN CẤP: Tạt men vi sinh liên tiếp 3 ngày")
         notes.append("Kết hợp thay 20% nước ao nếu pH và độ mặn cho phép")

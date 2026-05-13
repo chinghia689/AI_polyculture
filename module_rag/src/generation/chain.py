@@ -26,7 +26,54 @@ def _get_client() -> OpenAI:
     return OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
 
 
-def ask(question: str, context_docs: list[dict] | None = None) -> dict:
+def _format_calc_block(calc: dict) -> str:
+    """Tạo block liều lượng đã tính sẵn để nhúng vào prompt LLM."""
+    lines: list[str] = []
+
+    lime = calc.get("lime")
+    if lime:
+        lines.append("LIỀU VÔI (đã tính theo pH thực đo và giai đoạn ao — dùng đúng số này):")
+        if lime.get("dolomite_kg"):
+            lines.append(f"  • Dolomite: {lime['dolomite_kg']} kg (toàn ao)")
+        if lime.get("agricultural_lime_kg"):
+            lines.append(f"  • Vôi nông nghiệp CaCO₃: {lime['agricultural_lime_kg']} kg")
+        if lime.get("gypsum_kg") and lime["gypsum_kg"] > 0:
+            lines.append(f"  • Thạch cao CaSO₄: {lime['gypsum_kg']} kg")
+        if lime.get("warning"):
+            lines.append(f"  ⚠ CẢNH BÁO pH: {lime['warning']}")
+
+    probiotic = calc.get("probiotic")
+    if probiotic:
+        lines.append("LIỀU MEN VI SINH (đã điều chỉnh theo mô hình nuôi và giai đoạn ao — dùng đúng số này):")
+        lines.append(f"  • Bacillus dạng bột: {probiotic['bacillus_kg']} kg")
+        lines.append(f"  • EM gốc (pha 1:100): {probiotic['em_liters']} lít")
+        lines.append(f"  • Thời điểm tạt: {probiotic.get('apply_time', '18:00–20:00')}")
+        nd = probiotic.get("next_dose_day", 7)
+        lines.append(f"  • Tần suất: {'hàng ngày' if nd <= 1 else f'mỗi {nd} ngày'}")
+
+    wq = calc.get("water_quality")
+    if wq and wq.get("alerts"):
+        danger = [a for a in wq["alerts"] if a["status"] == "danger"]
+        warn   = [a for a in wq["alerts"] if a["status"] == "warning"]
+        if danger:
+            lines.append("THÔNG SỐ NGUY HIỂM (xử lý TRƯỚC khi thả giống):")
+            for a in danger:
+                lines.append(f"  ⚠ {a['label']} = {a['value']} {a['unit']}: {a['message']}")
+                if a.get("action"):
+                    lines.append(f"     → {a['action']}")
+        if warn:
+            lines.append("THÔNG SỐ CẦN THEO DÕI:")
+            for a in warn:
+                lines.append(f"  ! {a['label']} = {a['value']} {a['unit']}: {a['message']}")
+
+    return "\n".join(lines)
+
+
+def ask(
+    question: str,
+    context_docs: list[dict] | None = None,
+    calculator_results: dict | None = None,
+) -> dict:
     if context_docs is None:
         context_docs = retrieve(question, k=4)
 
@@ -36,12 +83,27 @@ def ask(question: str, context_docs: list[dict] | None = None) -> dict:
         for d in relevant
     )
 
-    user_message = f"""Câu hỏi: {question}
+    calc_block = ""
+    calc_instruction = ""
+    if calculator_results:
+        block = _format_calc_block(calculator_results)
+        if block:
+            calc_block = f"""
+=== KẾT QUẢ TÍNH TOÁN TỰ ĐỘNG ===
+{block}
+=================================
+"""
+            calc_instruction = (
+                "\nQUAN TRỌNG: Khi nêu liều vôi và men vi sinh trong phác đồ, "
+                "sử dụng CHÍNH XÁC các số đã tính ở trên. Không tự tính lại."
+            )
 
+    user_message = f"""Câu hỏi: {question}
+{calc_block}
 Tài liệu kỹ thuật tham khảo:
 {context_text if context_text else "(không có tài liệu phù hợp)"}
 
-Hãy trả lời dựa trên tài liệu trên và kiến thức chuyên môn."""
+Hãy trả lời dựa trên tài liệu trên và kiến thức chuyên môn.{calc_instruction}"""
 
     client   = _get_client()
     response = client.chat.completions.create(
@@ -60,6 +122,17 @@ Hãy trả lời dựa trên tài liệu trên và kiến thức chuyên môn.""
     }
 
 
+_FARMING_LABEL = {
+    "extensive":     "quảng canh cải tiến (ao rừng ngập mặn, thông triều)",
+    "semi_intensive": "bán thâm canh (ao kín, kiểm soát nước)",
+}
+
+_STAGE_LABEL = {
+    "preparation": "cải tạo ao (trước khi thả giống)",
+    "stocked":     "đang nuôi (đã có tôm/cua trong ao)",
+}
+
+
 def build_diagnosis_query(
     disease: str | None,
     ph: float | None,
@@ -67,10 +140,26 @@ def build_diagnosis_query(
     temperature: float | None,
     area_ha: float | None,
     calc_recommendation: dict | None,
+    farming_model: str = "extensive",
+    pond_stage: str = "stocked",
+    # Thông số nâng cao
+    do_mgl: float | None = None,
+    alkalinity: float | None = None,
+    nh3_mgl: float | None = None,
+    no2_mgl: float | None = None,
+    transparency_cm: float | None = None,
+    days_cultured: int | None = None,
+    water_quality: dict | None = None,
 ) -> str:
     parts = []
+    parts.append(f"mô hình nuôi: {_FARMING_LABEL.get(farming_model, farming_model)}")
+    parts.append(f"giai đoạn ao: {_STAGE_LABEL.get(pond_stage, pond_stage)}")
+    if days_cultured is not None:
+        parts.append(f"ngày nuôi: {days_cultured}")
     if disease:
         parts.append(f"tôm/cua bị {disease}")
+
+    # Thông số cơ bản
     if ph is not None:
         parts.append(f"pH = {ph}")
     if salinity is not None:
@@ -79,10 +168,30 @@ def build_diagnosis_query(
         parts.append(f"nhiệt độ = {temperature}°C")
     if area_ha:
         parts.append(f"diện tích = {area_ha} ha")
+
+    # Thông số nâng cao
+    if do_mgl is not None:
+        parts.append(f"DO = {do_mgl} mg/L")
+    if alkalinity is not None:
+        parts.append(f"kiềm = {alkalinity} mg/L CaCO₃")
+    if nh3_mgl is not None:
+        parts.append(f"NH₃ = {nh3_mgl} mg/L")
+    if no2_mgl is not None:
+        parts.append(f"NO₂ = {no2_mgl} mg/L")
+    if transparency_cm is not None:
+        parts.append(f"độ trong = {transparency_cm} cm")
+
+    # Cảnh báo từ calculators
     if calc_recommendation:
         w = (calc_recommendation.get("lime") or {}).get("warning")
         if w:
             parts.append(f"cảnh báo pH: {w}")
 
-    ctx = ", ".join(parts) if parts else "tình trạng ao nuôi"
-    return f"Tôi cần hướng dẫn xử lý: {ctx}. Đưa ra phác đồ điều trị và phòng ngừa cụ thể."
+    # Cảnh báo chất lượng nước
+    if water_quality:
+        danger_alerts = [a for a in water_quality.get("alerts", []) if a["status"] == "danger"]
+        for a in danger_alerts:
+            parts.append(f"NGUY HIỂM {a['label']} = {a['value']} {a['unit']}: {a['message']}")
+
+    ctx = ", ".join(parts)
+    return f"Tôi cần hướng dẫn xử lý: {ctx}. Đưa ra phác đồ điều trị và phòng ngừa phù hợp với mô hình nuôi."

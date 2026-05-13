@@ -76,6 +76,20 @@
     }
     .param-item input:focus { border-color: #4a90d9; }
 
+    /* Selector pills */
+    .pill-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .pill {
+      padding: 7px 14px; border: 2px solid #e2e8f0; border-radius: 20px;
+      font-size: 0.85rem; cursor: pointer; background: white;
+      color: #4a5568; transition: all 0.15s; user-select: none;
+    }
+    .pill.active {
+      border-color: #1a5276; background: #1a5276; color: white; font-weight: 600;
+    }
+    .selector-label {
+      font-size: 0.8rem; color: #718096; margin-bottom: 4px; display: block;
+    }
+
     /* Button */
     #submit-btn {
       width: 100%; padding: 14px; border: none; border-radius: 10px;
@@ -154,6 +168,25 @@
       background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px;
       padding: 12px 16px; color: #9b2335; font-size: 0.9rem; display: none;
     }
+
+    /* Water quality alerts */
+    .wq-alert {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem;
+    }
+    .wq-alert.danger  { background: #fff5f5; border-left: 3px solid #e53e3e; }
+    .wq-alert.warning { background: #fffaf0; border-left: 3px solid #dd6b20; }
+    .wq-alert.ok      { background: #f0fff4; border-left: 3px solid #38a169; }
+    .wq-alert .wq-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .wq-alert .wq-body { flex: 1; }
+    .wq-alert .wq-label { font-weight: 600; color: #2d3748; }
+    .wq-alert .wq-val   { color: #4a5568; }
+    .wq-alert .wq-msg   { color: #718096; margin-top: 2px; }
+    .wq-alert .wq-action { font-size: 0.8rem; color: #2b6cb0; margin-top: 4px; font-style: italic; }
+    .growth-note {
+      background: #ebf8ff; border-radius: 8px; padding: 10px 14px;
+      font-size: 0.82rem; color: #2c5282; margin-bottom: 10px; line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -167,8 +200,8 @@
 
 <main>
 
-  <!-- Upload -->
-  <div class="card">
+  <!-- Upload — ẩn khi giai đoạn cải tạo ao -->
+  <div class="card" id="upload-card">
     <h2>Chụp / tải ảnh tôm</h2>
     <div id="upload-zone" onclick="document.getElementById('file-input').click()">
       <div class="icon">📷</div>
@@ -203,6 +236,62 @@
         <input type="number" id="area_ha" placeholder="vd: 1.5" step="0.1" min="0" />
       </div>
     </div>
+
+    <!-- Thông số nâng cao (bộ test kit) -->
+    <div style="margin-top: 14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;"
+           onclick="toggleAdvanced()">
+        <span class="selector-label" style="margin-bottom:0">Thông số nâng cao</span>
+        <span id="adv-toggle" style="font-size:0.8rem;color:#4a90d9">+ Hiện thêm</span>
+      </div>
+      <div id="advanced-params" style="display:none;margin-top:10px;">
+        <div class="params-grid">
+          <div class="param-item">
+            <label>DO (mg/L)</label>
+            <input type="number" id="do_mgl" placeholder="vd: 5.5" step="0.1" min="0" max="20" />
+          </div>
+          <div class="param-item">
+            <label>Độ kiềm (mg/L)</label>
+            <input type="number" id="alkalinity" placeholder="vd: 100" step="5" min="0" max="500" />
+          </div>
+          <div class="param-item">
+            <label>NH₃ (mg/L)</label>
+            <input type="number" id="nh3_mgl" placeholder="vd: 0.05" step="0.01" min="0" max="10" />
+          </div>
+          <div class="param-item">
+            <label>NO₂⁻ (mg/L)</label>
+            <input type="number" id="no2_mgl" placeholder="vd: 0.2" step="0.05" min="0" max="10" />
+          </div>
+          <div class="param-item">
+            <label>Độ trong (cm)</label>
+            <input type="number" id="transparency_cm" placeholder="vd: 35" step="1" min="5" max="200" />
+          </div>
+          <div class="param-item">
+            <label>Ngày nuôi</label>
+            <input type="number" id="days_cultured" placeholder="vd: 45" step="1" min="0" max="365" />
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:0.75rem;color:#a0aec0;line-height:1.5;">
+          Đo bằng: bộ test kit API/Sera (~200–500k) · đĩa Secchi tự chế (~50k) · máy đo DO (~500k–1.5M)
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 14px;">
+      <span class="selector-label">Mô hình nuôi</span>
+      <div class="pill-group" id="farming-pills">
+        <div class="pill active" data-val="extensive" onclick="selectPill('farming-pills','extensive')">Quảng canh cải tiến</div>
+        <div class="pill"        data-val="semi_intensive" onclick="selectPill('farming-pills','semi_intensive')">Bán thâm canh</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 12px;">
+      <span class="selector-label">Giai đoạn ao</span>
+      <div class="pill-group" id="stage-pills">
+        <div class="pill active" data-val="stocked"     onclick="selectStage('stocked')">Đang nuôi</div>
+        <div class="pill"        data-val="preparation" onclick="selectStage('preparation')">Cải tạo ao</div>
+      </div>
+    </div>
   </div>
 
   <!-- Error -->
@@ -212,12 +301,13 @@
   <button id="submit-btn" onclick="diagnose()" disabled>Chẩn đoán</button>
 
   <!-- Loading -->
-  <div class="spinner" id="spinner">Đang phân tích ảnh...</div>
+  <div class="spinner" id="spinner" data-text-vision="Đang phân tích ảnh..." data-text-prep="Đang tính toán...">Đang phân tích ảnh...</div>
 
   <!-- Result -->
   <div id="result">
 
-    <div class="card">
+    <!-- Kết quả chẩn đoán bệnh (chỉ hiện khi đang nuôi) -->
+    <div class="card" id="vision-result-card">
       <div id="result-badge" class="badge"></div>
       <div class="result-disease" id="result-disease"></div>
       <div class="result-conf" id="result-conf"></div>
@@ -225,13 +315,19 @@
         <div class="conf-bar" id="conf-bar" style="width:0%"></div>
       </div>
 
-      <div class="section-title">Phác đồ điều trị</div>
+      <div class="section-title" id="treatment-title">Phác đồ điều trị</div>
       <div class="treatment" id="treatment"></div>
 
       <div class="sources" id="sources-wrap">
         <div class="section-title" style="margin-top:12px">Tài liệu tham khảo</div>
         <div id="sources"></div>
       </div>
+    </div>
+
+    <div class="card" id="wq-card" style="display:none">
+      <h2>Chất lượng nước</h2>
+      <div id="wq-growth"></div>
+      <div id="wq-alerts"></div>
     </div>
 
     <div class="card" id="calc-card" style="display:none">
@@ -246,6 +342,40 @@
 <script>
   const API = '';   // same origin
   let selectedFile = null;
+
+  function selectPill(groupId, val) {
+    document.querySelectorAll(`#${groupId} .pill`).forEach(p => {
+      p.classList.toggle('active', p.dataset.val === val);
+    });
+  }
+
+  function getPill(groupId) {
+    const active = document.querySelector(`#${groupId} .pill.active`);
+    return active ? active.dataset.val : null;
+  }
+
+  function toggleAdvanced() {
+    const el = document.getElementById('advanced-params');
+    const lbl = document.getElementById('adv-toggle');
+    const hidden = el.style.display === 'none';
+    el.style.display = hidden ? 'block' : 'none';
+    lbl.textContent = hidden ? '− Ẩn bớt' : '+ Hiện thêm';
+  }
+
+  function selectStage(val) {
+    selectPill('stage-pills', val);
+    const isPrep = val === 'preparation';
+
+    document.getElementById('upload-card').style.display  = isPrep ? 'none' : 'block';
+    document.getElementById('submit-btn').disabled         = isPrep ? false : !selectedFile;
+    document.getElementById('submit-btn').textContent      = isPrep ? 'Tính liều cải tạo ao' : 'Chẩn đoán';
+
+    const sp = document.getElementById('spinner');
+    sp.textContent = isPrep ? sp.dataset.textPrep : sp.dataset.textVision;
+
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('error-box').style.display = 'none';
+  }
 
   // Drag & drop
   const zone = document.getElementById('upload-zone');
@@ -285,7 +415,8 @@
   }
 
   async function diagnose() {
-    if (!selectedFile) return;
+    const isPrep = getPill('stage-pills') === 'preparation';
+    if (!isPrep && !selectedFile) return;
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
@@ -293,21 +424,42 @@
     document.getElementById('result').style.display = 'none';
     document.getElementById('error-box').style.display = 'none';
 
-    const form = new FormData();
-    form.append('file', selectedFile);
-    ['ph','salinity','temperature','area_ha'].forEach(id => {
-      const v = document.getElementById(id).value;
-      if (v) form.append(id, v);
-    });
-
     try {
-      const res = await fetch(`${API}/api/v1/vision/diagnose`, { method: 'POST', body: form });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || `Lỗi ${res.status}`);
+      let data;
+      if (isPrep) {
+        // Cải tạo ao: gọi JSON endpoint, không cần ảnh
+        const body = { farming_model: getPill('farming-pills') || 'extensive', pond_stage: 'preparation' };
+        ['ph','salinity','temperature','area_ha','do_mgl','alkalinity','nh3_mgl','no2_mgl','transparency_cm'].forEach(id => {
+          const v = document.getElementById(id).value;
+          if (v) body[id] = parseFloat(v);
+        });
+        const dc = document.getElementById('days_cultured').value;
+        if (dc) body['days_cultured'] = parseInt(dc);
+        const res = await fetch(`${API}/api/v1/diagnose/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Lỗi ${res.status}`); }
+        data = await res.json();
+        showPrepResult(data);
+      } else {
+        // Đang nuôi: gọi vision/diagnose với ảnh
+        const form = new FormData();
+        form.append('file', selectedFile);
+        ['ph','salinity','temperature','area_ha','do_mgl','alkalinity','nh3_mgl','no2_mgl','transparency_cm'].forEach(id => {
+          const v = document.getElementById(id).value;
+          if (v) form.append(id, v);
+        });
+        const dc = document.getElementById('days_cultured').value;
+        if (dc) form.append('days_cultured', dc);
+        form.append('farming_model', getPill('farming-pills') || 'extensive');
+        form.append('pond_stage', 'stocked');
+        const res = await fetch(`${API}/api/v1/vision/diagnose`, { method: 'POST', body: form });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Lỗi ${res.status}`); }
+        data = await res.json();
+        showResult(data);
       }
-      const data = await res.json();
-      showResult(data);
     } catch (e) {
       const box = document.getElementById('error-box');
       box.textContent = '⚠ ' + e.message;
@@ -318,7 +470,36 @@
     }
   }
 
+  function showPrepResult(data) {
+    // Ẩn phần chẩn đoán bệnh, chỉ hiện phác đồ cải tạo + liều lượng
+    const vc = document.getElementById('vision-result-card');
+    document.getElementById('result-badge').style.display  = 'none';
+    document.getElementById('result-disease').style.display = 'none';
+    document.getElementById('result-conf').style.display   = 'none';
+    document.querySelector('.conf-bar-wrap').style.display = 'none';
+    vc.style.display = 'block';
+
+    document.getElementById('treatment-title').textContent = 'Hướng dẫn cải tạo ao';
+    document.getElementById('treatment').textContent = data.treatment_plan || '(Không có hướng dẫn)';
+
+    const unique = [...new Set(data.sources || [])];
+    document.getElementById('sources').innerHTML = unique.map(s => `<span class="source-tag">${s}</span>`).join('');
+
+    showWaterQuality(data.water_quality);
+    showCalc(data);
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+  }
+
   function showResult(data) {
+    // Khôi phục hiển thị đầy đủ cho chế độ chẩn đoán bệnh
+    ['result-badge','result-disease','result-conf'].forEach(id =>
+      document.getElementById(id).style.display = ''
+    );
+    document.querySelector('.conf-bar-wrap').style.display = '';
+    document.getElementById('treatment-title').textContent = 'Phác đồ điều trị';
+    document.getElementById('vision-result-card').style.display = 'block';
+
     // Badge
     const badge = document.getElementById('result-badge');
     badge.textContent = data.is_healthy ? '✓ Tôm khỏe mạnh' : '⚠ Phát hiện bệnh';
@@ -338,19 +519,49 @@
     document.getElementById('sources').innerHTML =
       unique.map(s => `<span class="source-tag">${s}</span>`).join('');
 
-    // Calculator
+    showWaterQuality(data.water_quality);
+    showCalc(data);
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function showWaterQuality(wq) {
+    const card = document.getElementById('wq-card');
+    if (!wq || !wq.alerts || wq.alerts.length === 0) { card.style.display = 'none'; return; }
+
+    const growthEl = document.getElementById('wq-growth');
+    growthEl.innerHTML = wq.growth_note
+      ? `<div class="growth-note">${wq.growth_note}</div>` : '';
+
+    const icon = { danger: '🔴', warning: '🟡', ok: '🟢' };
+    document.getElementById('wq-alerts').innerHTML = wq.alerts.map(a => `
+      <div class="wq-alert ${a.status}">
+        <span class="wq-icon">${icon[a.status] || '⚪'}</span>
+        <div class="wq-body">
+          <span class="wq-label">${a.label}</span>
+          <span class="wq-val"> = ${a.value} ${a.unit}</span>
+          <div class="wq-msg">${a.message}</div>
+          ${a.action ? `<div class="wq-action">→ ${a.action}</div>` : ''}
+        </div>
+      </div>`).join('');
+
+    card.style.display = 'block';
+  }
+
+  function showCalc(data) {
     const calcCard = document.getElementById('calc-card');
     const grid = document.getElementById('calc-grid');
     grid.innerHTML = '';
     const items = [];
 
     if (data.lime) {
-      items.push({ val: data.lime.dolomite_kg + ' kg', lbl: 'Dolomite' });
-      items.push({ val: data.lime.agricultural_lime_kg + ' kg', lbl: 'Vôi nông nghiệp' });
+      if (data.lime.dolomite_kg)          items.push({ val: data.lime.dolomite_kg + ' kg',          lbl: 'Dolomite' });
+      if (data.lime.agricultural_lime_kg) items.push({ val: data.lime.agricultural_lime_kg + ' kg', lbl: 'Vôi nông nghiệp' });
+      if (data.lime.gypsum_kg)            items.push({ val: data.lime.gypsum_kg + ' kg',            lbl: 'Thạch cao' });
     }
     if (data.probiotic) {
       items.push({ val: data.probiotic.bacillus_kg + ' kg', lbl: 'Bacillus' });
-      items.push({ val: data.probiotic.em_liters + ' lít', lbl: 'EM vi sinh' });
+      items.push({ val: data.probiotic.em_liters + ' lít',  lbl: 'EM vi sinh' });
     }
 
     if (items.length > 0) {
@@ -364,9 +575,6 @@
     } else {
       calcCard.style.display = 'none';
     }
-
-    document.getElementById('result').style.display = 'block';
-    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
   }
 </script>
 

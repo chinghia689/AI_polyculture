@@ -20,5 +20,6 @@ class VisionDiagnoseResponse(BaseModel):
     treatment_plan: str
     sources:        list[str]
     # Calculator
-    lime:      dict | None
-    probiotic: dict | None
+    lime:          dict | None
+    probiotic:     dict | None
+    water_quality: dict | None

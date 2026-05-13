@@ -36,7 +36,11 @@ _STATUS_LABEL = {
 }
 
 
-def calculate_lime(current_ph: float, area_ha: float) -> LimeResult:
+def calculate_lime(
+    current_ph: float,
+    area_ha: float,
+    pond_stage: str = "stocked",
+) -> LimeResult:
     if not (0 < area_ha <= 1000):
         raise ValueError("Diện tích ao không hợp lệ")
     if not (0.0 <= current_ph <= 14.0):
@@ -46,11 +50,21 @@ def calculate_lime(current_ph: float, area_ha: float) -> LimeResult:
         (r for r in _LIME_TABLE if r[0] <= current_ph < r[1]),
         _LIME_TABLE[-1],
     )
-    _, _, dolomite, agri_lime, gypsum, status_key = row
+    _, _, dolomite_base, agri_lime_base, gypsum_base, status_key = row
+
+    # Giai đoạn cải tạo ao → tăng 1.5x để xử lý đáy triệt để
+    prep = pond_stage == "preparation"
+    stage_factor = 1.5 if prep else 1.0
+
+    dolomite  = dolomite_base  * stage_factor
+    agri_lime = agri_lime_base * stage_factor
+    gypsum    = gypsum_base    # thạch cao không tăng theo giai đoạn
 
     notes = []
     warning = None
 
+    if prep:
+        notes.insert(0, "Giai đoạn cải tạo ao: tăng liều vôi 1.5x để xử lý đáy, diệt mầm bệnh tồn dư")
     if status_key == "critical_acid":
         warning = "pH CỰC KỲ NGUY HIỂM — tạt vôi ngay lập tức, dừng cho ăn"
         notes.append("Rải vôi đều khắp mặt ao lúc 8–9 giờ sáng")
