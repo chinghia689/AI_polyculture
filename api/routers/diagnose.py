@@ -1,9 +1,13 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from module_calculator.src.lime_calculator import calculate_lime
 from module_calculator.src.probiotic_calculator import calculate_probiotic
 from module_calculator.src.stocking_calculator import FarmingModel, calculate_stocking
 from module_calculator.src.water_quality import assess_water_quality
 from module_rag.src.generation.chain import ask, build_diagnosis_query
+from api.db import get_db
+from api.dependencies import get_optional_user
+from api.models.history import DiagnoseHistory
 from api.schemas.diagnose import (
     ChatRequest, ChatResponse,
     DiagnoseRequest, DiagnoseResponse,
@@ -23,7 +27,11 @@ def chat(req: ChatRequest):
 
 
 @router.post("/", response_model=DiagnoseResponse)
-def diagnose(req: DiagnoseRequest):
+def diagnose(
+    req: DiagnoseRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_optional_user),
+):
     """Tích hợp chẩn đoán + tính toán → phác đồ điều trị hoàn chỉnh."""
     lime_result      = None
     probiotic_result = None
@@ -121,6 +129,20 @@ def diagnose(req: DiagnoseRequest):
         rag_result = ask(query, calculator_results=calc_results)
     except Exception as e:
         raise HTTPException(500, f"RAG error: {e}")
+
+    if current_user:
+        db.add(DiagnoseHistory(
+            user_id=current_user.id,
+            farm_id=getattr(req, "farm_id", None),
+            disease=req.disease,
+            species="shrimp",
+            ph=req.ph, salinity=req.salinity, temperature=req.temperature,
+            area_ha=req.area_ha, farming_model=req.farming_model, pond_stage=req.pond_stage,
+            treatment_plan=rag_result["answer"],
+            lime_result=lime_result, probiotic_result=probiotic_result,
+            stocking_result=stocking_result, wq_result=wq_dict if wq.alerts else None,
+        ))
+        db.commit()
 
     return DiagnoseResponse(
         query=query,

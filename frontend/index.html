@@ -3,190 +3,133 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PolyAqua — Chẩn đoán bệnh tôm</title>
+  <title>PolyAqua — AI hỗ trợ nuôi tôm cua</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f0f4f8;
-      color: #1a202c;
-      min-height: 100vh;
-    }
+    header { background: #1a5276; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.15rem; font-weight: 700; }
+    header span { font-size: 0.8rem; opacity: 0.8; }
+    #header-user { font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; cursor: pointer; }
 
-    header {
-      background: #1a5276;
-      color: white;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    header h1 { font-size: 1.2rem; font-weight: 700; }
-    header span { font-size: 0.85rem; opacity: 0.8; }
+    /* Tab nav */
+    .tab-nav { display: flex; background: white; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 10; }
+    .tab-btn { flex: 1; padding: 12px 8px; border: none; background: none; font-size: 0.82rem; font-weight: 500; color: #718096; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+    .tab-btn.active { color: #1a5276; border-bottom-color: #1a5276; font-weight: 700; }
+    .tab-btn:hover { background: #f7fafc; }
 
-    main { max-width: 600px; margin: 0 auto; padding: 20px 16px 40px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    }
+    main { max-width: 600px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
     .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: #2d3748; }
 
-    /* Upload zone */
-    #upload-zone {
-      border: 2px dashed #90cdf4;
-      border-radius: 10px;
-      padding: 32px 16px;
-      text-align: center;
-      cursor: pointer;
-      transition: background 0.2s;
-      background: #ebf8ff;
-    }
+    /* Upload */
+    #upload-zone { border: 2px dashed #90cdf4; border-radius: 10px; padding: 32px 16px; text-align: center; cursor: pointer; transition: background 0.2s; background: #ebf8ff; }
     #upload-zone:hover, #upload-zone.drag { background: #bee3f8; }
     #upload-zone .icon { font-size: 2.5rem; margin-bottom: 8px; }
     #upload-zone p { color: #4a90d9; font-size: 0.95rem; font-weight: 500; }
     #upload-zone small { color: #718096; font-size: 0.8rem; }
     #file-input { display: none; }
-
     #preview-wrap { display: none; margin-top: 14px; text-align: center; }
-    #preview-img {
-      max-width: 100%; max-height: 260px; border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    }
-    #change-btn {
-      display: inline-block; margin-top: 8px; font-size: 0.8rem;
-      color: #4a90d9; cursor: pointer; text-decoration: underline;
-    }
+    #preview-img { max-width: 100%; max-height: 260px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+    #change-btn { display: inline-block; margin-top: 8px; font-size: 0.8rem; color: #4a90d9; cursor: pointer; text-decoration: underline; }
 
     /* Params */
-    .params-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
-    .param-item label {
-      display: block; font-size: 0.8rem; color: #718096; margin-bottom: 4px;
-    }
-    .param-item input {
-      width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0;
-      border-radius: 8px; font-size: 0.95rem; outline: none;
-      transition: border-color 0.2s;
-    }
-    .param-item input:focus { border-color: #4a90d9; }
+    .params-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .param-item label { display: block; font-size: 0.8rem; color: #718096; margin-bottom: 4px; }
+    .param-item input, .param-item select { width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; background: white; }
+    .param-item input:focus, .param-item select:focus { border-color: #4a90d9; }
 
-    /* Selector pills */
+    /* Pills */
     .pill-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-    .pill {
-      padding: 7px 14px; border: 2px solid #e2e8f0; border-radius: 20px;
-      font-size: 0.85rem; cursor: pointer; background: white;
-      color: #4a5568; transition: all 0.15s; user-select: none;
-    }
-    .pill.active {
-      border-color: #1a5276; background: #1a5276; color: white; font-weight: 600;
-    }
-    .selector-label {
-      font-size: 0.8rem; color: #718096; margin-bottom: 4px; display: block;
-    }
+    .pill { padding: 7px 14px; border: 2px solid #e2e8f0; border-radius: 20px; font-size: 0.85rem; cursor: pointer; background: white; color: #4a5568; transition: all 0.15s; user-select: none; }
+    .pill.active { border-color: #1a5276; background: #1a5276; color: white; font-weight: 600; }
+    .selector-label { font-size: 0.8rem; color: #718096; margin-bottom: 4px; display: block; }
 
-    /* Button */
-    #submit-btn {
-      width: 100%; padding: 14px; border: none; border-radius: 10px;
-      background: #1a5276; color: white; font-size: 1rem; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
-    }
-    #submit-btn:hover { background: #154360; }
-    #submit-btn:disabled { background: #a0aec0; cursor: not-allowed; }
+    /* Buttons */
+    .btn-primary { width: 100%; padding: 14px; border: none; border-radius: 10px; background: #1a5276; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background: #154360; }
+    .btn-primary:disabled { background: #a0aec0; cursor: not-allowed; }
+    .btn-secondary { padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; color: #4a5568; font-size: 0.85rem; cursor: pointer; }
+    .btn-secondary:hover { background: #f7fafc; }
 
     /* Spinner */
-    .spinner {
-      display: none; text-align: center; padding: 20px;
-      color: #718096; font-size: 0.9rem;
-    }
-    .spinner::before {
-      content: ''; display: block; width: 36px; height: 36px; margin: 0 auto 10px;
-      border: 3px solid #e2e8f0; border-top-color: #1a5276;
-      border-radius: 50%; animation: spin 0.8s linear infinite;
-    }
+    .spinner { display: none; text-align: center; padding: 20px; color: #718096; font-size: 0.9rem; }
+    .spinner::before { content: ''; display: block; width: 36px; height: 36px; margin: 0 auto 10px; border: 3px solid #e2e8f0; border-top-color: #1a5276; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Result */
-    #result { display: none; }
-
-    .badge {
-      display: inline-block; padding: 4px 12px; border-radius: 20px;
-      font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;
-    }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; }
     .badge.healthy { background: #c6f6d5; color: #276749; }
-    .badge.sick    { background: #fed7d7; color: #9b2335; }
-
-    .result-disease {
-      font-size: 1.2rem; font-weight: 700; margin-bottom: 4px;
-    }
-    .result-conf {
-      font-size: 0.85rem; color: #718096; margin-bottom: 16px;
-    }
-
-    .conf-bar-wrap {
-      background: #e2e8f0; border-radius: 4px; height: 8px; margin-bottom: 16px;
-    }
-    .conf-bar {
-      height: 8px; border-radius: 4px; background: #1a5276;
-      transition: width 0.6s ease;
-    }
-
-    .section-title {
-      font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.05em; color: #718096; margin-bottom: 8px;
-    }
-
-    .treatment {
-      background: #f7fafc; border-left: 3px solid #1a5276;
-      border-radius: 0 8px 8px 0; padding: 14px 16px;
-      font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap;
-      max-height: 400px; overflow-y: auto;
-    }
-
+    .badge.sick { background: #fed7d7; color: #9b2335; }
+    .result-disease { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+    .result-conf { font-size: 0.85rem; color: #718096; margin-bottom: 16px; }
+    .conf-bar-wrap { background: #e2e8f0; border-radius: 4px; height: 8px; margin-bottom: 16px; }
+    .conf-bar { height: 8px; border-radius: 4px; background: #1a5276; transition: width 0.6s ease; }
+    .section-title { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #718096; margin-bottom: 8px; }
+    .treatment { background: #f7fafc; border-left: 3px solid #1a5276; border-radius: 0 8px 8px 0; padding: 14px 16px; font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
     .sources { margin-top: 12px; }
-    .source-tag {
-      display: inline-block; background: #ebf8ff; color: #2b6cb0;
-      font-size: 0.75rem; padding: 3px 8px; border-radius: 4px;
-      margin: 3px 3px 0 0;
-    }
-
-    .calc-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;
-    }
-    .calc-item {
-      background: #f7fafc; border-radius: 8px; padding: 10px 12px;
-    }
+    .source-tag { display: inline-block; background: #ebf8ff; color: #2b6cb0; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; margin: 3px 3px 0 0; }
+    .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .calc-item { background: #f7fafc; border-radius: 8px; padding: 10px 12px; }
     .calc-item .val { font-size: 1.1rem; font-weight: 700; color: #1a5276; }
     .calc-item .lbl { font-size: 0.75rem; color: #718096; margin-top: 2px; }
+    .error-box { background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; padding: 12px 16px; color: #9b2335; font-size: 0.9rem; display: none; }
 
-    .error-box {
-      background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px;
-      padding: 12px 16px; color: #9b2335; font-size: 0.9rem; display: none;
-    }
-
-    /* Water quality alerts */
-    .wq-alert {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem;
-    }
+    /* Water quality */
+    .wq-alert { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem; }
     .wq-alert.danger  { background: #fff5f5; border-left: 3px solid #e53e3e; }
     .wq-alert.warning { background: #fffaf0; border-left: 3px solid #dd6b20; }
     .wq-alert.ok      { background: #f0fff4; border-left: 3px solid #38a169; }
     .wq-alert .wq-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
     .wq-alert .wq-body { flex: 1; }
     .wq-alert .wq-label { font-weight: 600; color: #2d3748; }
-    .wq-alert .wq-val   { color: #4a5568; }
-    .wq-alert .wq-msg   { color: #718096; margin-top: 2px; }
+    .wq-alert .wq-val { color: #4a5568; }
+    .wq-alert .wq-msg { color: #718096; margin-top: 2px; }
     .wq-alert .wq-action { font-size: 0.8rem; color: #2b6cb0; margin-top: 4px; font-style: italic; }
-    .growth-note {
-      background: #ebf8ff; border-radius: 8px; padding: 10px 14px;
-      font-size: 0.82rem; color: #2c5282; margin-bottom: 10px; line-height: 1.5;
+    .wq-alert .wq-recheck { font-size: 0.78rem; color: #276749; margin-top: 3px; }
+    .growth-note { background: #ebf8ff; border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; color: #2c5282; margin-bottom: 10px; line-height: 1.5; }
+
+    /* ── SCHEDULE TAB ── */
+    .schedule-task {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid #f0f4f8;
     }
+    .schedule-task:last-child { border-bottom: none; }
+    .task-date { font-size: 0.75rem; font-weight: 600; color: #1a5276; min-width: 54px; padding-top: 2px; }
+    .task-body { flex: 1; }
+    .task-name { font-size: 0.9rem; font-weight: 500; color: #2d3748; }
+    .task-note { font-size: 0.78rem; color: #718096; margin-top: 2px; line-height: 1.4; }
+    .task-cat { display: inline-block; font-size: 0.7rem; padding: 1px 7px; border-radius: 10px; margin-top: 4px; font-weight: 600; }
+    .cat-water_test { background: #ebf8ff; color: #2b6cb0; }
+    .cat-treatment  { background: #fff5f5; color: #c53030; }
+    .cat-feed       { background: #f0fff4; color: #276749; }
+    .cat-trap_check { background: #fffaf0; color: #c05621; }
+    .cat-harvest    { background: #faf5ff; color: #6b46c1; }
+    .task-pri-high   { border-left: 3px solid #e53e3e; padding-left: 8px; }
+    .task-pri-medium { border-left: 3px solid #dd6b20; padding-left: 8px; }
+    .task-pri-low    { border-left: 3px solid #38a169; padding-left: 8px; }
+    .week-header { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #718096; margin: 16px 0 6px; padding: 0 0 4px; border-bottom: 1px solid #e2e8f0; }
+    .upcoming-badge { display: inline-block; background: #c6f6d5; color: #276749; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+
+    /* ── AUTH TAB ── */
+    .auth-form { max-width: 340px; margin: 0 auto; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.82rem; color: #718096; margin-bottom: 5px; }
+    .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; outline: none; }
+    .form-group input:focus { border-color: #4a90d9; }
+    .auth-toggle { text-align: center; margin-top: 12px; font-size: 0.85rem; color: #718096; }
+    .auth-toggle a { color: #1a5276; cursor: pointer; font-weight: 600; }
+    .auth-error { background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; padding: 10px 14px; color: #9b2335; font-size: 0.85rem; margin-bottom: 12px; display: none; }
+    .auth-success { background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 8px; padding: 10px 14px; color: #276749; font-size: 0.85rem; margin-bottom: 12px; display: none; }
+    .profile-card { text-align: center; padding: 20px; }
+    .profile-avatar { width: 64px; height: 64px; background: #1a5276; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: white; margin: 0 auto 12px; }
+    .profile-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .profile-email { font-size: 0.85rem; color: #718096; margin-bottom: 16px; }
   </style>
 </head>
 <body>
@@ -194,15 +137,33 @@
 <header>
   <div>
     <h1>🦐 PolyAqua Agent</h1>
-    <span>Chẩn đoán bệnh tôm — ĐBSCL</span>
+    <span>AI hỗ trợ nuôi tôm sú & cua biển — ĐBSCL</span>
   </div>
+  <div id="header-user" onclick="switchTab('account')">👤 Đăng nhập</div>
 </header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('diagnose')">🔍 Chẩn đoán</button>
+  <button class="tab-btn"        onclick="switchTab('schedule')">📅 Lịch thăm ao</button>
+  <button class="tab-btn"        onclick="switchTab('account')">👤 Tài khoản</button>
+</nav>
 
 <main>
 
-  <!-- Upload — ẩn khi giai đoạn cải tạo ao -->
+<!-- ═══════════════ TAB: CHẨN ĐOÁN ═══════════════ -->
+<div id="tab-diagnose" class="tab-panel active">
+
   <div class="card" id="upload-card">
-    <h2>Chụp / tải ảnh tôm</h2>
+    <h2>Chụp / tải ảnh tôm hoặc cua</h2>
+
+    <div style="margin-bottom:12px">
+      <span class="selector-label">Loài</span>
+      <div class="pill-group" id="species-pills">
+        <div class="pill active" data-val="shrimp" onclick="selectPill('species-pills','shrimp')">🦐 Tôm sú</div>
+        <div class="pill"        data-val="crab"   onclick="selectPill('species-pills','crab')">🦀 Cua biển</div>
+      </div>
+    </div>
+
     <div id="upload-zone" onclick="document.getElementById('file-input').click()">
       <div class="icon">📷</div>
       <p>Nhấn để chọn ảnh</p>
@@ -215,77 +176,44 @@
     </div>
   </div>
 
-  <!-- Thông số ao (tuỳ chọn) -->
   <div class="card">
     <h2>Thông số ao <span style="font-weight:400;color:#718096">(tuỳ chọn)</span></h2>
     <div class="params-grid">
-      <div class="param-item">
-        <label>pH nước</label>
-        <input type="number" id="ph" placeholder="vd: 7.5" step="0.1" min="0" max="14" />
-      </div>
-      <div class="param-item">
-        <label>Độ mặn (ppt)</label>
-        <input type="number" id="salinity" placeholder="vd: 15" step="0.5" min="0" max="45" />
-      </div>
-      <div class="param-item">
-        <label>Nhiệt độ (°C)</label>
-        <input type="number" id="temperature" placeholder="vd: 28" step="0.5" min="15" max="42" />
-      </div>
-      <div class="param-item">
-        <label>Diện tích (ha)</label>
-        <input type="number" id="area_ha" placeholder="vd: 1.5" step="0.1" min="0" />
-      </div>
+      <div class="param-item"><label>pH nước</label><input type="number" id="ph" placeholder="vd: 7.5" step="0.1" min="0" max="14" /></div>
+      <div class="param-item"><label>Độ mặn (ppt)</label><input type="number" id="salinity" placeholder="vd: 15" step="0.5" min="0" max="45" /></div>
+      <div class="param-item"><label>Nhiệt độ (°C)</label><input type="number" id="temperature" placeholder="vd: 28" step="0.5" min="15" max="42" /></div>
+      <div class="param-item"><label>Diện tích (ha)</label><input type="number" id="area_ha" placeholder="vd: 1.5" step="0.1" min="0" /></div>
     </div>
 
-    <!-- Thông số nâng cao (bộ test kit) -->
-    <div style="margin-top: 14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;"
-           onclick="toggleAdvanced()">
+    <div style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleAdvanced()">
         <span class="selector-label" style="margin-bottom:0">Thông số nâng cao</span>
         <span id="adv-toggle" style="font-size:0.8rem;color:#4a90d9">+ Hiện thêm</span>
       </div>
-      <div id="advanced-params" style="display:none;margin-top:10px;">
+      <div id="advanced-params" style="display:none;margin-top:10px">
         <div class="params-grid">
-          <div class="param-item">
-            <label>DO (mg/L)</label>
-            <input type="number" id="do_mgl" placeholder="vd: 5.5" step="0.1" min="0" max="20" />
-          </div>
-          <div class="param-item">
-            <label>Độ kiềm (mg/L)</label>
-            <input type="number" id="alkalinity" placeholder="vd: 100" step="5" min="0" max="500" />
-          </div>
-          <div class="param-item">
-            <label>NH₃ (mg/L)</label>
-            <input type="number" id="nh3_mgl" placeholder="vd: 0.05" step="0.01" min="0" max="10" />
-          </div>
-          <div class="param-item">
-            <label>NO₂⁻ (mg/L)</label>
-            <input type="number" id="no2_mgl" placeholder="vd: 0.2" step="0.05" min="0" max="10" />
-          </div>
-          <div class="param-item">
-            <label>Độ trong (cm)</label>
-            <input type="number" id="transparency_cm" placeholder="vd: 35" step="1" min="5" max="200" />
-          </div>
-          <div class="param-item">
-            <label>Ngày nuôi</label>
-            <input type="number" id="days_cultured" placeholder="vd: 45" step="1" min="0" max="365" />
-          </div>
+          <div class="param-item"><label>DO (mg/L)</label><input type="number" id="do_mgl" placeholder="vd: 5.5" step="0.1" min="0" max="20" /></div>
+          <div class="param-item"><label>Độ kiềm (mg/L)</label><input type="number" id="alkalinity" placeholder="vd: 100" step="5" min="0" max="500" /></div>
+          <div class="param-item"><label>NH₃ (mg/L)</label><input type="number" id="nh3_mgl" placeholder="vd: 0.05" step="0.01" min="0" max="10" /></div>
+          <div class="param-item"><label>NO₂⁻ (mg/L)</label><input type="number" id="no2_mgl" placeholder="vd: 0.2" step="0.05" min="0" max="10" /></div>
+          <div class="param-item"><label>Độ trong (cm)</label><input type="number" id="transparency_cm" placeholder="vd: 35" step="1" min="5" max="200" /></div>
+          <div class="param-item"><label>Ngày nuôi</label><input type="number" id="days_cultured" placeholder="vd: 45" step="1" min="0" max="365" /></div>
         </div>
-        <div style="margin-top:8px;font-size:0.75rem;color:#a0aec0;line-height:1.5;">
-          Đo bằng: bộ test kit API/Sera (~200–500k) · đĩa Secchi tự chế (~50k) · máy đo DO (~500k–1.5M)
+        <div style="margin-top:8px;font-size:0.75rem;color:#a0aec0;line-height:1.5">
+          Đo bằng: bộ test kit API/Sera (~200–500k) · đĩa Secchi (~50k) · máy đo DO (~500k)
         </div>
       </div>
     </div>
 
-    <div style="margin-top: 14px;">
+    <div style="margin-top:14px">
       <span class="selector-label">Mô hình nuôi</span>
       <div class="pill-group" id="farming-pills">
-        <div class="pill active" data-val="extensive" onclick="selectPill('farming-pills','extensive')">Quảng canh cải tiến</div>
+        <div class="pill active" data-val="extensive"      onclick="selectPill('farming-pills','extensive')">Quảng canh cải tiến</div>
         <div class="pill"        data-val="semi_intensive" onclick="selectPill('farming-pills','semi_intensive')">Bán thâm canh</div>
       </div>
     </div>
 
-    <div style="margin-top: 12px;">
+    <div style="margin-top:12px">
       <span class="selector-label">Giai đoạn ao</span>
       <div class="pill-group" id="stage-pills">
         <div class="pill active" data-val="stocked"     onclick="selectStage('stocked')">Đang nuôi</div>
@@ -294,30 +222,18 @@
     </div>
   </div>
 
-  <!-- Error -->
   <div class="error-box" id="error-box"></div>
-
-  <!-- Submit -->
-  <button id="submit-btn" onclick="diagnose()" disabled>Chẩn đoán</button>
-
-  <!-- Loading -->
+  <button id="submit-btn" class="btn-primary" onclick="diagnose()" disabled>Chẩn đoán</button>
   <div class="spinner" id="spinner" data-text-vision="Đang phân tích ảnh..." data-text-prep="Đang tính toán...">Đang phân tích ảnh...</div>
 
-  <!-- Result -->
   <div id="result">
-
-    <!-- Kết quả chẩn đoán bệnh (chỉ hiện khi đang nuôi) -->
     <div class="card" id="vision-result-card">
       <div id="result-badge" class="badge"></div>
       <div class="result-disease" id="result-disease"></div>
       <div class="result-conf" id="result-conf"></div>
-      <div class="conf-bar-wrap">
-        <div class="conf-bar" id="conf-bar" style="width:0%"></div>
-      </div>
-
+      <div class="conf-bar-wrap"><div class="conf-bar" id="conf-bar" style="width:0%"></div></div>
       <div class="section-title" id="treatment-title">Phác đồ điều trị</div>
       <div class="treatment" id="treatment"></div>
-
       <div class="sources" id="sources-wrap">
         <div class="section-title" style="margin-top:12px">Tài liệu tham khảo</div>
         <div id="sources"></div>
@@ -334,254 +250,600 @@
       <h2>Liều lượng khuyến nghị</h2>
       <div class="calc-grid" id="calc-grid"></div>
     </div>
+  </div>
+
+</div><!-- end tab-diagnose -->
+
+
+<!-- ═══════════════ TAB: LỊCH THĂM AO ═══════════════ -->
+<div id="tab-schedule" class="tab-panel">
+
+  <div class="card">
+    <h2>Tạo lịch thăm ao</h2>
+    <div class="params-grid">
+      <div class="param-item">
+        <label>Ngày bắt đầu</label>
+        <input type="date" id="sch-start" />
+      </div>
+      <div class="param-item">
+        <label>Thời gian nuôi (ngày)</label>
+        <input type="number" id="sch-duration" value="60" min="7" max="365" step="1" />
+      </div>
+      <div class="param-item">
+        <label>Diện tích (ha)</label>
+        <input type="number" id="sch-area" placeholder="vd: 1.5" step="0.1" min="0.1" value="1" />
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <span class="selector-label">Giai đoạn</span>
+      <div class="pill-group" id="sch-phase-pills">
+        <div class="pill"        data-val="preparation" onclick="selectPill('sch-phase-pills','preparation')">Chuẩn bị ao</div>
+        <div class="pill active" data-val="early"       onclick="selectPill('sch-phase-pills','early')">Tháng 1–2</div>
+        <div class="pill"        data-val="mid"         onclick="selectPill('sch-phase-pills','mid')">Tháng 3–4</div>
+        <div class="pill"        data-val="late"        onclick="selectPill('sch-phase-pills','late')">Tháng 5–6</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <span class="selector-label">Mô hình nuôi</span>
+      <div class="pill-group" id="sch-farming-pills">
+        <div class="pill active" data-val="extensive"      onclick="selectPill('sch-farming-pills','extensive')">Quảng canh</div>
+        <div class="pill"        data-val="semi_intensive" onclick="selectPill('sch-farming-pills','semi_intensive')">Bán thâm canh</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <button class="btn-primary" onclick="generateSchedule()">Tạo lịch</button>
+    </div>
+  </div>
+
+  <div class="spinner" id="sch-spinner">Đang tạo lịch...</div>
+  <div class="error-box" id="sch-error"></div>
+
+  <!-- Kết quả lịch -->
+  <div id="sch-result" style="display:none">
+
+    <!-- Upcoming 7 ngày -->
+    <div class="card" id="sch-upcoming-card" style="display:none">
+      <h2>7 ngày tới <span class="upcoming-badge" id="sch-upcoming-count"></span></h2>
+      <div id="sch-upcoming-list"></div>
+    </div>
+
+    <!-- Toàn bộ lịch -->
+    <div class="card">
+      <h2>Toàn bộ lịch <span style="font-weight:400;color:#718096;font-size:0.85rem" id="sch-total-label"></span></h2>
+      <div id="sch-full-list"></div>
+    </div>
 
   </div>
+
+</div><!-- end tab-schedule -->
+
+
+<!-- ═══════════════ TAB: TÀI KHOẢN ═══════════════ -->
+<div id="tab-account" class="tab-panel">
+
+  <!-- Chưa đăng nhập -->
+  <div id="auth-panel">
+    <div class="card">
+      <h2 id="auth-title">Đăng nhập</h2>
+      <div class="auth-error" id="auth-error"></div>
+      <div class="auth-success" id="auth-success"></div>
+      <div class="auth-form">
+        <div id="register-fields" style="display:none">
+          <div class="form-group">
+            <label>Họ và tên</label>
+            <input type="text" id="reg-name" placeholder="Nguyễn Văn A" />
+          </div>
+          <div class="form-group">
+            <label>Số điện thoại (tuỳ chọn)</label>
+            <input type="tel" id="reg-phone" placeholder="0901 234 567" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="auth-email" placeholder="email@gmail.com" />
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="auth-password" placeholder="Tối thiểu 6 ký tự" />
+        </div>
+        <button class="btn-primary" onclick="submitAuth()">Đăng nhập</button>
+        <div class="auth-toggle">
+          Chưa có tài khoản? <a onclick="toggleAuthMode()">Đăng ký ngay</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Đã đăng nhập -->
+  <div id="profile-panel" style="display:none">
+    <div class="card">
+      <div class="profile-card">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-name" id="profile-name"></div>
+        <div class="profile-email" id="profile-email"></div>
+        <button class="btn-secondary" onclick="logout()" style="margin-top:8px">Đăng xuất</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Lịch sử chẩn đoán</h2>
+      <div id="history-list"><div style="color:#718096;font-size:0.9rem;text-align:center;padding:12px">Đang tải...</div></div>
+    </div>
+  </div>
+
+</div><!-- end tab-account -->
 
 </main>
 
 <script>
-  const API = '';   // same origin
-  let selectedFile = null;
+const API = '';
+let selectedFile = null;
+let authMode = 'login';   // 'login' | 'register'
+let currentUser = null;
 
-  function selectPill(groupId, val) {
-    document.querySelectorAll(`#${groupId} .pill`).forEach(p => {
-      p.classList.toggle('active', p.dataset.val === val);
-    });
+// ── Init ──────────────────────────────────────────────────────────────────
+(function init() {
+  const token = localStorage.getItem('polyaqua_token');
+  const user  = JSON.parse(localStorage.getItem('polyaqua_user') || 'null');
+  if (token && user) {
+    currentUser = user;
+    showProfile(user);
   }
+  // Set today as default schedule start date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('sch-start').value = today;
+})();
 
-  function getPill(groupId) {
-    const active = document.querySelector(`#${groupId} .pill.active`);
-    return active ? active.dataset.val : null;
-  }
+// ── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const idx = ['diagnose','schedule','account'].indexOf(name);
+  if (btns[idx]) btns[idx].classList.add('active');
+}
 
-  function toggleAdvanced() {
-    const el = document.getElementById('advanced-params');
-    const lbl = document.getElementById('adv-toggle');
-    const hidden = el.style.display === 'none';
-    el.style.display = hidden ? 'block' : 'none';
-    lbl.textContent = hidden ? '− Ẩn bớt' : '+ Hiện thêm';
-  }
-
-  function selectStage(val) {
-    selectPill('stage-pills', val);
-    const isPrep = val === 'preparation';
-
-    document.getElementById('upload-card').style.display  = isPrep ? 'none' : 'block';
-    document.getElementById('submit-btn').disabled         = isPrep ? false : !selectedFile;
-    document.getElementById('submit-btn').textContent      = isPrep ? 'Tính liều cải tạo ao' : 'Chẩn đoán';
-
-    const sp = document.getElementById('spinner');
-    sp.textContent = isPrep ? sp.dataset.textPrep : sp.dataset.textVision;
-
-    document.getElementById('result').style.display = 'none';
-    document.getElementById('error-box').style.display = 'none';
-  }
-
-  // Drag & drop
-  const zone = document.getElementById('upload-zone');
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('drag');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('image/')) setFile(f);
+// ── Pills ─────────────────────────────────────────────────────────────────
+function selectPill(groupId, val) {
+  document.querySelectorAll(`#${groupId} .pill`).forEach(p => {
+    p.classList.toggle('active', p.dataset.val === val);
   });
+}
+function getPill(groupId) {
+  const active = document.querySelector(`#${groupId} .pill.active`);
+  return active ? active.dataset.val : null;
+}
 
-  document.getElementById('file-input').addEventListener('change', e => {
-    if (e.target.files[0]) setFile(e.target.files[0]);
-  });
+function toggleAdvanced() {
+  const el = document.getElementById('advanced-params');
+  const lbl = document.getElementById('adv-toggle');
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? 'block' : 'none';
+  lbl.textContent = hidden ? '− Ẩn bớt' : '+ Hiện thêm';
+}
 
-  function setFile(file) {
-    selectedFile = file;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      document.getElementById('preview-img').src = ev.target.result;
-      document.getElementById('preview-wrap').style.display = 'block';
-      document.getElementById('upload-zone').style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-    document.getElementById('submit-btn').disabled = false;
-    document.getElementById('result').style.display = 'none';
-    document.getElementById('error-box').style.display = 'none';
-  }
+function selectStage(val) {
+  selectPill('stage-pills', val);
+  const isPrep = val === 'preparation';
+  document.getElementById('upload-card').style.display  = isPrep ? 'none' : 'block';
+  document.getElementById('submit-btn').disabled         = isPrep ? false : !selectedFile;
+  document.getElementById('submit-btn').textContent      = isPrep ? 'Tính liều cải tạo ao' : 'Chẩn đoán';
+  const sp = document.getElementById('spinner');
+  sp.textContent = isPrep ? sp.dataset.textPrep : sp.dataset.textVision;
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+}
 
-  function resetUpload() {
-    selectedFile = null;
-    document.getElementById('preview-wrap').style.display = 'none';
-    document.getElementById('upload-zone').style.display = 'block';
-    document.getElementById('submit-btn').disabled = true;
-    document.getElementById('file-input').value = '';
-    document.getElementById('result').style.display = 'none';
-  }
+// ── Upload ────────────────────────────────────────────────────────────────
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) setFile(f);
+});
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) setFile(e.target.files[0]);
+});
 
-  async function diagnose() {
-    const isPrep = getPill('stage-pills') === 'preparation';
-    if (!isPrep && !selectedFile) return;
+function setFile(file) {
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('preview-img').src = ev.target.result;
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('upload-zone').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+}
 
-    const btn = document.getElementById('submit-btn');
-    btn.disabled = true;
-    document.getElementById('spinner').style.display = 'block';
-    document.getElementById('result').style.display = 'none';
-    document.getElementById('error-box').style.display = 'none';
+function resetUpload() {
+  selectedFile = null;
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('file-input').value = '';
+  document.getElementById('result').style.display = 'none';
+}
 
-    try {
-      let data;
-      if (isPrep) {
-        // Cải tạo ao: gọi JSON endpoint, không cần ảnh
-        const body = { farming_model: getPill('farming-pills') || 'extensive', pond_stage: 'preparation' };
-        ['ph','salinity','temperature','area_ha','do_mgl','alkalinity','nh3_mgl','no2_mgl','transparency_cm'].forEach(id => {
-          const v = document.getElementById(id).value;
-          if (v) body[id] = parseFloat(v);
-        });
-        const dc = document.getElementById('days_cultured').value;
-        if (dc) body['days_cultured'] = parseInt(dc);
-        const res = await fetch(`${API}/api/v1/diagnose/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Lỗi ${res.status}`); }
-        data = await res.json();
-        showPrepResult(data);
-      } else {
-        // Đang nuôi: gọi vision/diagnose với ảnh
-        const form = new FormData();
-        form.append('file', selectedFile);
-        ['ph','salinity','temperature','area_ha','do_mgl','alkalinity','nh3_mgl','no2_mgl','transparency_cm'].forEach(id => {
-          const v = document.getElementById(id).value;
-          if (v) form.append(id, v);
-        });
-        const dc = document.getElementById('days_cultured').value;
-        if (dc) form.append('days_cultured', dc);
-        form.append('farming_model', getPill('farming-pills') || 'extensive');
-        form.append('pond_stage', 'stocked');
-        const res = await fetch(`${API}/api/v1/vision/diagnose`, { method: 'POST', body: form });
-        if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Lỗi ${res.status}`); }
-        data = await res.json();
-        showResult(data);
-      }
-    } catch (e) {
-      const box = document.getElementById('error-box');
-      box.textContent = '⚠ ' + e.message;
-      box.style.display = 'block';
-    } finally {
-      document.getElementById('spinner').style.display = 'none';
-      btn.disabled = false;
-    }
-  }
+// ── Diagnose ──────────────────────────────────────────────────────────────
+async function diagnose() {
+  const isPrep = getPill('stage-pills') === 'preparation';
+  if (!isPrep && !selectedFile) return;
 
-  function showPrepResult(data) {
-    // Ẩn phần chẩn đoán bệnh, chỉ hiện phác đồ cải tạo + liều lượng
-    const vc = document.getElementById('vision-result-card');
-    document.getElementById('result-badge').style.display  = 'none';
-    document.getElementById('result-disease').style.display = 'none';
-    document.getElementById('result-conf').style.display   = 'none';
-    document.querySelector('.conf-bar-wrap').style.display = 'none';
-    vc.style.display = 'block';
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
 
-    document.getElementById('treatment-title').textContent = 'Hướng dẫn cải tạo ao';
-    document.getElementById('treatment').textContent = data.treatment_plan || '(Không có hướng dẫn)';
+  const token = localStorage.getItem('polyaqua_token');
+  const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
 
-    const unique = [...new Set(data.sources || [])];
-    document.getElementById('sources').innerHTML = unique.map(s => `<span class="source-tag">${s}</span>`).join('');
-
-    showWaterQuality(data.water_quality);
-    showCalc(data);
-    document.getElementById('result').style.display = 'block';
-    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
-  }
-
-  function showResult(data) {
-    // Khôi phục hiển thị đầy đủ cho chế độ chẩn đoán bệnh
-    ['result-badge','result-disease','result-conf'].forEach(id =>
-      document.getElementById(id).style.display = ''
-    );
-    document.querySelector('.conf-bar-wrap').style.display = '';
-    document.getElementById('treatment-title').textContent = 'Phác đồ điều trị';
-    document.getElementById('vision-result-card').style.display = 'block';
-
-    // Badge
-    const badge = document.getElementById('result-badge');
-    badge.textContent = data.is_healthy ? '✓ Tôm khỏe mạnh' : '⚠ Phát hiện bệnh';
-    badge.className = 'badge ' + (data.is_healthy ? 'healthy' : 'sick');
-
-    document.getElementById('result-disease').textContent = data.label_vi;
-    document.getElementById('result-conf').textContent =
-      `Độ tin cậy: ${(data.confidence * 100).toFixed(1)}%`;
-    document.getElementById('conf-bar').style.width = (data.confidence * 100) + '%';
-
-    // Treatment
-    document.getElementById('treatment').textContent =
-      data.treatment_plan || '(Không có phác đồ)';
-
-    // Sources
-    const unique = [...new Set(data.sources)];
-    document.getElementById('sources').innerHTML =
-      unique.map(s => `<span class="source-tag">${s}</span>`).join('');
-
-    showWaterQuality(data.water_quality);
-    showCalc(data);
-    document.getElementById('result').style.display = 'block';
-    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
-  }
-
-  function showWaterQuality(wq) {
-    const card = document.getElementById('wq-card');
-    if (!wq || !wq.alerts || wq.alerts.length === 0) { card.style.display = 'none'; return; }
-
-    const growthEl = document.getElementById('wq-growth');
-    growthEl.innerHTML = wq.growth_note
-      ? `<div class="growth-note">${wq.growth_note}</div>` : '';
-
-    const icon = { danger: '🔴', warning: '🟡', ok: '🟢' };
-    document.getElementById('wq-alerts').innerHTML = wq.alerts.map(a => `
-      <div class="wq-alert ${a.status}">
-        <span class="wq-icon">${icon[a.status] || '⚪'}</span>
-        <div class="wq-body">
-          <span class="wq-label">${a.label}</span>
-          <span class="wq-val"> = ${a.value} ${a.unit}</span>
-          <div class="wq-msg">${a.message}</div>
-          ${a.action ? `<div class="wq-action">→ ${a.action}</div>` : ''}
-        </div>
-      </div>`).join('');
-
-    card.style.display = 'block';
-  }
-
-  function showCalc(data) {
-    const calcCard = document.getElementById('calc-card');
-    const grid = document.getElementById('calc-grid');
-    grid.innerHTML = '';
-    const items = [];
-
-    if (data.lime) {
-      if (data.lime.dolomite_kg)          items.push({ val: data.lime.dolomite_kg.toLocaleString('vi-VN') + ' kg',          lbl: 'Dolomite' });
-      if (data.lime.agricultural_lime_kg) items.push({ val: data.lime.agricultural_lime_kg.toLocaleString('vi-VN') + ' kg', lbl: 'Vôi nông nghiệp' });
-      if (data.lime.gypsum_kg)            items.push({ val: data.lime.gypsum_kg.toLocaleString('vi-VN') + ' kg',            lbl: 'Thạch cao' });
-    }
-    if (data.probiotic) {
-      items.push({ val: data.probiotic.bacillus_kg + ' kg', lbl: 'Bacillus' });
-      items.push({ val: data.probiotic.em_liters + ' lít',  lbl: 'EM vi sinh' });
-    }
-    if (data.stocking) {
-      items.push({ val: data.stocking.shrimp_pl.toLocaleString('vi-VN') + ' con', lbl: 'Tôm sú PL12–15' });
-      items.push({ val: data.stocking.crab_juveniles.toLocaleString('vi-VN') + ' con', lbl: 'Cua biển giống' });
-      if (data.stocking.supplement_feed_kg_per_day)
-        items.push({ val: data.stocking.supplement_feed_kg_per_day + ' kg/ngày', lbl: 'Thức ăn bổ sung' });
-    }
-
-    if (items.length > 0) {
-      items.forEach(item => {
-        grid.innerHTML += `<div class="calc-item">
-          <div class="val">${item.val}</div>
-          <div class="lbl">${item.lbl}</div>
-        </div>`;
+  try {
+    let data;
+    if (isPrep) {
+      const body = { farming_model: getPill('farming-pills') || 'extensive', pond_stage: 'preparation' };
+      ['ph','salinity','temperature','area_ha','do_mgl','alkalinity','nh3_mgl','no2_mgl','transparency_cm'].forEach(id => {
+        const v = document.getElementById(id).value;
+        if (v) body[id] = parseFloat(v);
       });
-      calcCard.style.display = 'block';
+      const dc = document.getElementById('days_cultured').value;
+      if (dc) body['days_cultured'] = parseInt(dc);
+      const res = await fetch(`${API}/api/v1/diagnose/`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Lỗi ${res.status}`); }
+      data = await res.json();
+      showPrepResult(data);
     } else {
-      calcCard.style.display = 'none';
+      const form = new FormData();
+      form.append('file', selectedFile);
+      form.append('species', getPill('species-pills') || 'shrimp');
+      ['ph','salinity','temperature','area_ha','do_mgl','alkalinity','nh3_mgl','no2_mgl','transparency_cm'].forEach(id => {
+        const v = document.getElementById(id).value;
+        if (v) form.append(id, v);
+      });
+      const dc = document.getElementById('days_cultured').value;
+      if (dc) form.append('days_cultured', dc);
+      form.append('farming_model', getPill('farming-pills') || 'extensive');
+      form.append('pond_stage', 'stocked');
+      const res = await fetch(`${API}/api/v1/vision/diagnose`, { method: 'POST', body: form, headers });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Lỗi ${res.status}`); }
+      data = await res.json();
+      showResult(data);
     }
+  } catch (e) {
+    const box = document.getElementById('error-box');
+    box.textContent = '⚠ ' + e.message;
+    box.style.display = 'block';
+  } finally {
+    document.getElementById('spinner').style.display = 'none';
+    btn.disabled = false;
   }
+}
+
+function showPrepResult(data) {
+  ['result-badge','result-disease','result-conf'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.querySelector('.conf-bar-wrap').style.display = 'none';
+  document.getElementById('vision-result-card').style.display = 'block';
+  document.getElementById('treatment-title').textContent = 'Hướng dẫn cải tạo ao';
+  document.getElementById('treatment').textContent = data.treatment_plan || '(Không có hướng dẫn)';
+  const unique = [...new Set(data.sources || [])];
+  document.getElementById('sources').innerHTML = unique.map(s => `<span class="source-tag">${s}</span>`).join('');
+  showWaterQuality(data.water_quality);
+  showCalc(data);
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+}
+
+function showResult(data) {
+  ['result-badge','result-disease','result-conf'].forEach(id => document.getElementById(id).style.display = '');
+  document.querySelector('.conf-bar-wrap').style.display = '';
+  document.getElementById('treatment-title').textContent = 'Phác đồ điều trị';
+  document.getElementById('vision-result-card').style.display = 'block';
+
+  const isHealthy = data.is_healthy;
+  const badge = document.getElementById('result-badge');
+  const species = getPill('species-pills') === 'crab' ? 'Cua' : 'Tôm';
+
+  // Crab model not ready
+  if (data.confidence === 0 && data.disease === 'model_not_ready') {
+    badge.textContent = '⏳ Model cua đang huấn luyện';
+    badge.className = 'badge';
+    badge.style.background = '#fef3c7'; badge.style.color = '#92400e';
+    document.getElementById('result-disease').textContent = '';
+    document.getElementById('result-conf').textContent = data.label_vi || '';
+    document.querySelector('.conf-bar-wrap').style.display = 'none';
+  } else {
+    badge.textContent = isHealthy ? `✓ ${species} khỏe mạnh` : `⚠ Phát hiện bệnh`;
+    badge.className = 'badge ' + (isHealthy ? 'healthy' : 'sick');
+    badge.style = '';
+    document.getElementById('result-disease').textContent = data.label_vi;
+    document.getElementById('result-conf').textContent = `Độ tin cậy: ${(data.confidence * 100).toFixed(1)}%`;
+    document.getElementById('conf-bar').style.width = (data.confidence * 100) + '%';
+  }
+
+  document.getElementById('treatment').textContent = data.treatment_plan || '(Không có phác đồ)';
+  const unique = [...new Set(data.sources)];
+  document.getElementById('sources').innerHTML = unique.map(s => `<span class="source-tag">${s}</span>`).join('');
+  showWaterQuality(data.water_quality);
+  showCalc(data);
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+}
+
+function showWaterQuality(wq) {
+  const card = document.getElementById('wq-card');
+  if (!wq || !wq.alerts || wq.alerts.length === 0) { card.style.display = 'none'; return; }
+  const growthEl = document.getElementById('wq-growth');
+  growthEl.innerHTML = wq.growth_note ? `<div class="growth-note">${wq.growth_note}</div>` : '';
+  const icon = { danger: '🔴', warning: '🟡', ok: '🟢' };
+  document.getElementById('wq-alerts').innerHTML = wq.alerts.map(a => `
+    <div class="wq-alert ${a.status}">
+      <span class="wq-icon">${icon[a.status] || '⚪'}</span>
+      <div class="wq-body">
+        <span class="wq-label">${a.label}</span>
+        <span class="wq-val"> = ${a.value} ${a.unit}</span>
+        <div class="wq-msg">${a.message}</div>
+        ${a.action  ? `<div class="wq-action">→ ${a.action}</div>` : ''}
+        ${a.recheck ? `<div class="wq-recheck">🕐 ${a.recheck}</div>` : ''}
+      </div>
+    </div>`).join('');
+  card.style.display = 'block';
+}
+
+function showCalc(data) {
+  const calcCard = document.getElementById('calc-card');
+  const grid = document.getElementById('calc-grid');
+  grid.innerHTML = '';
+  const items = [];
+  if (data.lime) {
+    if (data.lime.dolomite_kg)          items.push({ val: data.lime.dolomite_kg.toLocaleString('vi-VN') + ' kg',          lbl: 'Vôi đá (Dolomite)' });
+    if (data.lime.agricultural_lime_kg) items.push({ val: data.lime.agricultural_lime_kg.toLocaleString('vi-VN') + ' kg', lbl: 'Vôi nông nghiệp' });
+    if (data.lime.gypsum_kg)            items.push({ val: data.lime.gypsum_kg.toLocaleString('vi-VN') + ' kg',            lbl: 'Thạch cao' });
+  }
+  if (data.probiotic) {
+    items.push({ val: data.probiotic.bacillus_kg + ' kg', lbl: 'Men vi sinh Bacillus' });
+    items.push({ val: data.probiotic.em_liters + ' lít',  lbl: 'EM gốc' });
+  }
+  if (data.stocking) {
+    items.push({ val: data.stocking.shrimp_pl.toLocaleString('vi-VN') + ' con', lbl: 'Tôm sú PL12–15' });
+    items.push({ val: data.stocking.crab_juveniles.toLocaleString('vi-VN') + ' con', lbl: 'Cua biển giống' });
+    if (data.stocking.supplement_feed_kg_per_day)
+      items.push({ val: data.stocking.supplement_feed_kg_per_day + ' kg/ngày', lbl: 'Thức ăn bổ sung' });
+  }
+  if (items.length > 0) {
+    items.forEach(item => {
+      grid.innerHTML += `<div class="calc-item"><div class="val">${item.val}</div><div class="lbl">${item.lbl}</div></div>`;
+    });
+    calcCard.style.display = 'block';
+  } else {
+    calcCard.style.display = 'none';
+  }
+}
+
+// ── SCHEDULE ──────────────────────────────────────────────────────────────
+async function generateSchedule() {
+  const startDate  = document.getElementById('sch-start').value;
+  const duration   = parseInt(document.getElementById('sch-duration').value) || 60;
+  const area       = parseFloat(document.getElementById('sch-area').value) || 1.0;
+  const phase      = getPill('sch-phase-pills') || 'early';
+  const farmModel  = getPill('sch-farming-pills') || 'extensive';
+
+  if (!startDate) {
+    showSchError('Vui lòng chọn ngày bắt đầu');
+    return;
+  }
+
+  document.getElementById('sch-spinner').style.display = 'block';
+  document.getElementById('sch-result').style.display  = 'none';
+  document.getElementById('sch-error').style.display   = 'none';
+
+  try {
+    const res = await fetch(`${API}/api/v1/calculator/schedule`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        start_date:    startDate,
+        phase:         phase,
+        duration_days: duration,
+        area_ha:       area,
+        farming_model: farmModel,
+      }),
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Lỗi ${res.status}`); }
+    const data = await res.json();
+    renderSchedule(data);
+  } catch (e) {
+    showSchError(e.message);
+  } finally {
+    document.getElementById('sch-spinner').style.display = 'none';
+  }
+}
+
+function showSchError(msg) {
+  const el = document.getElementById('sch-error');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+const CAT_LABEL = {
+  water_test: 'Đo nước', treatment: 'Xử lý', feed: 'Thức ăn',
+  trap_check: 'Kiểm lú', harvest: 'Thu hoạch',
+};
+
+function renderSchedule(data) {
+  // Upcoming 7 ngày
+  const upcoming = data.upcoming_7d || [];
+  const upEl = document.getElementById('sch-upcoming-card');
+  if (upcoming.length > 0) {
+    document.getElementById('sch-upcoming-count').textContent = upcoming.length + ' việc';
+    document.getElementById('sch-upcoming-list').innerHTML = upcoming.map(t => renderTask(t)).join('');
+    upEl.style.display = 'block';
+  } else {
+    upEl.style.display = 'none';
+  }
+
+  // Full schedule — nhóm theo tuần
+  const tasks = data.tasks || [];
+  document.getElementById('sch-total-label').textContent = `(${tasks.length} việc)`;
+
+  if (tasks.length === 0) {
+    document.getElementById('sch-full-list').innerHTML = '<div style="color:#718096;text-align:center;padding:12px">Không có việc nào</div>';
+    document.getElementById('sch-result').style.display = 'block';
+    return;
+  }
+
+  // Group by week
+  const startD = new Date(tasks[0].date);
+  const groups = {};
+  tasks.forEach(t => {
+    const d = new Date(t.date);
+    const weekNum = Math.floor((d - startD) / (7 * 86400000));
+    const key = `Tuần ${weekNum + 1}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(t);
+  });
+
+  let html = '';
+  for (const [week, wTasks] of Object.entries(groups)) {
+    const dateRange = `${fmtDate(wTasks[0].date)} – ${fmtDate(wTasks[wTasks.length-1].date)}`;
+    html += `<div class="week-header">${week} <span style="font-weight:400;text-transform:none;font-size:0.73rem">${dateRange}</span></div>`;
+    html += wTasks.map(t => renderTask(t)).join('');
+  }
+  document.getElementById('sch-full-list').innerHTML = html;
+  document.getElementById('sch-result').style.display = 'block';
+  document.getElementById('sch-result').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderTask(t) {
+  const priClass = `task-pri-${t.priority}`;
+  const catClass = `cat-${t.category}`;
+  const catLabel = CAT_LABEL[t.category] || t.category;
+  return `<div class="schedule-task">
+    <div class="task-date">${fmtDate(t.date)}</div>
+    <div class="task-body ${priClass}">
+      <div class="task-name">${t.task}</div>
+      ${t.note ? `<div class="task-note">${t.note}</div>` : ''}
+      <span class="task-cat ${catClass}">${catLabel}</span>
+    </div>
+  </div>`;
+}
+
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getDate()}/${d.getMonth()+1}`;
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  document.getElementById('auth-title').textContent = authMode === 'login' ? 'Đăng nhập' : 'Đăng ký';
+  document.getElementById('register-fields').style.display = authMode === 'register' ? 'block' : 'none';
+  document.querySelector('#auth-panel .btn-primary').textContent = authMode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản';
+  document.querySelector('.auth-toggle a').textContent = authMode === 'login' ? 'Đăng ký ngay' : 'Đã có tài khoản';
+  document.querySelector('.auth-toggle').innerHTML = authMode === 'login'
+    ? 'Chưa có tài khoản? <a onclick="toggleAuthMode()">Đăng ký ngay</a>'
+    : 'Đã có tài khoản? <a onclick="toggleAuthMode()">Đăng nhập</a>';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function submitAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+
+  if (!email || !pass) { errEl.textContent = 'Vui lòng điền đầy đủ thông tin'; errEl.style.display = 'block'; return; }
+
+  try {
+    let url, body;
+    if (authMode === 'login') {
+      url = `${API}/api/v1/auth/login`;
+      body = { email, password: pass };
+    } else {
+      const name = document.getElementById('reg-name').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      if (!name) { errEl.textContent = 'Vui lòng nhập họ và tên'; errEl.style.display = 'block'; return; }
+      url = `${API}/api/v1/auth/register`;
+      body = { email, password: pass, full_name: name, phone: phone || undefined };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Lỗi');
+
+    localStorage.setItem('polyaqua_token', data.access_token);
+    localStorage.setItem('polyaqua_user', JSON.stringify({ id: data.user_id, name: data.full_name, email: data.email }));
+    currentUser = { id: data.user_id, name: data.full_name, email: data.email };
+    showProfile(currentUser);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function showProfile(user) {
+  document.getElementById('auth-panel').style.display = 'none';
+  document.getElementById('profile-panel').style.display = 'block';
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('profile-email').textContent = user.email;
+  document.getElementById('header-user').textContent = '👤 ' + user.name.split(' ').pop();
+  loadHistory();
+}
+
+function logout() {
+  localStorage.removeItem('polyaqua_token');
+  localStorage.removeItem('polyaqua_user');
+  currentUser = null;
+  document.getElementById('profile-panel').style.display = 'none';
+  document.getElementById('auth-panel').style.display = 'block';
+  document.getElementById('header-user').textContent = '👤 Đăng nhập';
+}
+
+async function loadHistory() {
+  const token = localStorage.getItem('polyaqua_token');
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/api/v1/history/?limit=10`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    const el = document.getElementById('history-list');
+    if (!data.items || data.items.length === 0) {
+      el.innerHTML = '<div style="color:#718096;font-size:0.9rem;text-align:center;padding:12px">Chưa có lịch sử chẩn đoán</div>';
+      return;
+    }
+    el.innerHTML = data.items.map(h => {
+      const d = new Date(h.created_at);
+      const dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const speciesIcon = h.species === 'crab' ? '🦀' : '🦐';
+      const title = h.disease || (h.pond_stage === 'preparation' ? 'Cải tạo ao' : 'Kiểm tra tổng quát');
+      return `<div style="padding:10px 0;border-bottom:1px solid #f0f4f8">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:600;font-size:0.9rem">${speciesIcon} ${title}</span>
+          <span style="font-size:0.75rem;color:#718096">${dateStr}</span>
+        </div>
+        ${h.ph ? `<div style="font-size:0.8rem;color:#718096;margin-top:2px">pH ${h.ph}${h.area_ha ? ` · ${h.area_ha} ha` : ''} · ${h.farming_model === 'extensive' ? 'Quảng canh' : 'Bán thâm canh'}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('history-list').innerHTML = '<div style="color:#9b2335;font-size:0.85rem;padding:8px">Không tải được lịch sử</div>';
+  }
+}
 </script>
 
 </body>

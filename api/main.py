@@ -7,12 +7,18 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.routers import calculator, diagnose, vision
+from api.routers import auth, farms, history
 
 load_dotenv()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Tạo bảng DB nếu chưa có
+    from api.db import engine, Base
+    import api.models  # noqa: ensure models are registered
+    Base.metadata.create_all(bind=engine)
+
     # Preload embedding model + vectordb khi khởi động
     from module_rag.src.retrieval.retriever import _get_collection, _get_model
     from module_vision.predictor import _get_model as _get_vision_model
@@ -25,7 +31,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="PolyAqua Agent API",
     description="AI hỗ trợ nuôi tôm sú & cua biển xen kẽ — ĐBSCL",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -36,6 +42,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router,       prefix="/api/v1")
+app.include_router(farms.router,      prefix="/api/v1")
+app.include_router(history.router,    prefix="/api/v1")
 app.include_router(calculator.router, prefix="/api/v1")
 app.include_router(diagnose.router,   prefix="/api/v1")
 app.include_router(vision.router,     prefix="/api/v1")
@@ -50,7 +59,7 @@ def frontend():
 
 @app.get("/", tags=["Health"])
 def root():
-    return {"status": "ok", "service": "PolyAqua Agent API v0.1.0"}
+    return {"status": "ok", "service": "PolyAqua Agent API v0.2.0"}
 
 
 @app.get("/health", tags=["Health"])

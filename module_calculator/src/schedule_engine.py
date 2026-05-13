@@ -31,31 +31,66 @@ class FarmSchedule:
         return [t for t in self.tasks if today <= t.date <= cutoff]
 
 
-# Quy tắc lịch theo giai đoạn
-_RULES = {
+# Quảng canh cải tiến / ao rừng ngập mặn:
+# - Mật độ thấp, triều tự điều tiết → ít can thiệp hơn
+# - Probiotic mỗi 7 ngày (tidal cuốn bớt, dùng dày không hiệu quả)
+# - Trap check ít hơn (mật độ thấp, tôm/cua trú trong rừng)
+# - Không dùng phân NPK để gây màu
+_RULES_EXTENSIVE = {
     FarmPhase.PREPARATION: {
-        "water_test_days": 1,
-        "trap_check_days": None,   # chưa thả
-        "lime_days": 3,
-        "probiotic_days": 7,
+        "water_test_days":  2,
+        "trap_check_days":  None,
+        "lime_days":        5,
+        "probiotic_days":   7,
     },
     FarmPhase.EARLY: {
-        "water_test_days": 2,
-        "trap_check_days": 3,
-        "feed_adjust_days": 5,
-        "probiotic_days": 7,
+        "water_test_days":  2,
+        "trap_check_days":  7,
+        "feed_adjust_days": 7,
+        "probiotic_days":   7,
     },
     FarmPhase.MID: {
-        "water_test_days": 2,
-        "trap_check_days": 2,
-        "feed_adjust_days": 3,
-        "probiotic_days": 5,
+        "water_test_days":  2,
+        "trap_check_days":  5,
+        "feed_adjust_days": 5,
+        "probiotic_days":   7,
     },
     FarmPhase.LATE: {
-        "water_test_days": 1,
-        "trap_check_days": 1,
+        "water_test_days":  2,
+        "trap_check_days":  3,
+        "feed_adjust_days": 3,
+        "probiotic_days":   7,
+    },
+}
+
+# Bán thâm canh / ao kín:
+# - Mật độ cao, không có triều → kiểm soát chặt hơn
+# - Probiotic mỗi 5 ngày
+# - Điều chỉnh thức ăn thường xuyên hơn
+_RULES_SEMI = {
+    FarmPhase.PREPARATION: {
+        "water_test_days":  1,
+        "trap_check_days":  None,
+        "lime_days":        3,
+        "probiotic_days":   7,
+    },
+    FarmPhase.EARLY: {
+        "water_test_days":  2,
+        "trap_check_days":  3,
+        "feed_adjust_days": 5,
+        "probiotic_days":   7,
+    },
+    FarmPhase.MID: {
+        "water_test_days":  2,
+        "trap_check_days":  2,
+        "feed_adjust_days": 3,
+        "probiotic_days":   5,
+    },
+    FarmPhase.LATE: {
+        "water_test_days":  1,
+        "trap_check_days":  1,
         "feed_adjust_days": 2,
-        "probiotic_days": 5,
+        "probiotic_days":   5,
     },
 }
 
@@ -74,11 +109,8 @@ def _add_recurring(
     end = start + timedelta(days=days_total)
     while current <= end:
         tasks.append(ScheduleTask(
-            date=current,
-            task=task_name,
-            category=category,
-            priority=priority,
-            note=note,
+            date=current, task=task_name,
+            category=category, priority=priority, note=note,
         ))
         current += timedelta(days=interval)
 
@@ -88,32 +120,38 @@ def generate_schedule(
     phase: FarmPhase,
     duration_days: int = 60,
     area_ha: float = 1.0,
+    farming_model: str = "extensive",
 ) -> FarmSchedule:
-    rules = _RULES[phase]
+    is_extensive = farming_model == "extensive"
+    rules = (_RULES_EXTENSIVE if is_extensive else _RULES_SEMI)[phase]
     tasks: list[ScheduleTask] = []
 
     # Đo nước
     _add_recurring(tasks, start_date, duration_days,
                    rules["water_test_days"],
-                   "Đo pH, độ mặn, nhiệt độ, oxy hoà tan",
+                   "Đo pH, độ mặn, nhiệt độ, DO" + (" (sau mỗi con triều)" if is_extensive else ""),
                    "water_test", "high",
                    "Đo lúc 6h sáng và 14h chiều")
 
-    # Thăm lú (bẫy)
+    # Thăm lú / bẫy
     if rules.get("trap_check_days"):
+        note = ("Đặt lú ven rừng lúc 17h, thu lú lúc 5h sáng hôm sau"
+                if is_extensive else
+                "Đặt lú lúc 17h, thu lú lúc 5h sáng hôm sau")
         _add_recurring(tasks, start_date, duration_days,
                        rules["trap_check_days"],
                        "Kiểm tra lú — ước lượng mật độ và tăng trưởng",
-                       "trap_check", "medium",
-                       "Đặt lú lúc 17h, thu lú lúc 5h sáng hôm sau")
+                       "trap_check", "medium", note)
 
     # Tạt vi sinh
     if rules.get("probiotic_days"):
+        probiotic_note = ("Tạt 18–20h, đóng cống trước khi tạt ít nhất 12h"
+                          if is_extensive else
+                          "Tạt 18–20h, tắt quạt 30 phút trước")
         _add_recurring(tasks, start_date, duration_days,
                        rules["probiotic_days"],
-                       "Tạt men vi sinh Bacillus",
-                       "treatment", "medium",
-                       "Tạt 18–20h, tắt quạt 30 phút trước")
+                       "Tạt men vi sinh Bacillus + EM",
+                       "treatment", "medium", probiotic_note)
 
     # Điều chỉnh thức ăn
     if rules.get("feed_adjust_days"):
@@ -123,24 +161,54 @@ def generate_schedule(
                        "feed", "medium",
                        "Sàng ăn sau 2 tiếng, điều chỉnh ±10% nếu còn/hết")
 
-    # Sự kiện cố định theo giai đoạn
+    # Bón vôi định kỳ giai đoạn cải tạo
+    if rules.get("lime_days"):
+        lime_note = (f"Dolomite ~{int(area_ha * 80)} kg, tạt gần cống khi triều lên"
+                     if is_extensive else
+                     f"Vôi nông nghiệp ~{int(area_ha * 1000)} kg, rải đều mặt ao")
+        _add_recurring(tasks, start_date, duration_days,
+                       rules["lime_days"],
+                       "Bón vôi — cải tạo đáy, nâng pH",
+                       "treatment", "high", lime_note)
+
+    # Sự kiện cố định theo giai đoạn + mô hình
     if phase == FarmPhase.PREPARATION:
-        tasks.append(ScheduleTask(
-            date=start_date + timedelta(days=3),
-            task="Bón vôi lần 1 — diệt tạp, cải tạo đáy ao",
-            category="treatment", priority="high",
-            note=f"Liều theo máy tính vôi — khoảng {int(area_ha * 1000)} kg vôi nông nghiệp",
-        ))
-        tasks.append(ScheduleTask(
-            date=start_date + timedelta(days=10),
-            task="Gây màu nước — bón phân vi sinh NPK",
-            category="treatment", priority="medium",
-        ))
+        if is_extensive:
+            tasks.append(ScheduleTask(
+                date=start_date + timedelta(days=7),
+                task="Gây màu nước sinh học",
+                category="treatment", priority="medium",
+                note="Ủ mật rỉ đường 2L + cám gạo 2kg + vi sinh EM/ha, tạt sau 24h lên men",
+            ))
+            tasks.append(ScheduleTask(
+                date=start_date + timedelta(days=14),
+                task="Diệt tạp bằng Saponin",
+                category="treatment", priority="high",
+                note=f"Saponin 10 kg/1.000 m³ nước, tạt lúc 8–10h nắng, giữ nước 3–5 ngày",
+            ))
+        else:
+            tasks.append(ScheduleTask(
+                date=start_date + timedelta(days=3),
+                task="Bón vôi lần 1 — diệt tạp, cải tạo đáy ao",
+                category="treatment", priority="high",
+                note=f"~{int(area_ha * 1000)} kg vôi nông nghiệp, rải đều lúc 8–9h sáng",
+            ))
+            tasks.append(ScheduleTask(
+                date=start_date + timedelta(days=10),
+                task="Gây màu nước — bón phân NPK",
+                category="treatment", priority="medium",
+                note="NPK 16-16-8: 1–2 kg/1.000 m³, kết hợp vi sinh",
+            ))
+
     elif phase == FarmPhase.LATE:
+        harvest_day = 90 if is_extensive else 45
         tasks.append(ScheduleTask(
-            date=start_date + timedelta(days=45),
+            date=start_date + timedelta(days=harvest_day),
             task="THU HOẠCH THỬ — cân mẫu 50 con, xác định size thương phẩm",
             category="harvest", priority="high",
+            note=("Tôm sú quảng canh thu hoạch khi đạt 25–40 con/kg (~90–120 ngày)"
+                  if is_extensive else
+                  "Tôm đạt 20–30 con/kg, kiểm tra FCR trước khi quyết định thu"),
         ))
 
     tasks.sort(key=lambda t: t.date)

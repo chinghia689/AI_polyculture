@@ -34,6 +34,7 @@ alembic==1.13.3
 psycopg2-binary>=2.9.9
 python-jose[cryptography]==3.3.0  # JWT
 passlib[bcrypt]==1.7.4
+pydantic[email]>=2.9.2            # EmailStr validation
 python-multipart==0.0.12          # file upload
 minio==7.2.9
 

@@ -23,6 +23,8 @@ class DiagnoseRequest(BaseModel):
     # Mô hình & giai đoạn
     farming_model:   str          = Field("extensive",   description="extensive | semi_intensive")
     pond_stage:      str          = Field("stocked",     description="preparation | stocked")
+    # Liên kết ao (nếu đã login)
+    farm_id:         str | None   = Field(None,          description="ID ao để lưu lịch sử")
 
 
 class ChatResponse(BaseModel):
