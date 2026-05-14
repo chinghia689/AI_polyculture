@@ -43,6 +43,8 @@ services:
     environment:
       DATABASE_URL: postgresql://polyaqua:${POSTGRES_PASSWORD}@postgres:5432/polyaqua
       MINIO_ENDPOINT: minio:9000
+      HF_HOME: /root/.cache/huggingface
+      YOLO_CONFIG_DIR: /tmp/Ultralytics
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,7 +55,9 @@ services:
     volumes:
       - ./module_vision/models:/app/module_vision/models
       - ./module_rag/data:/app/module_rag/data
+      - hf_cache:/root/.cache/huggingface
 
 volumes:
   postgres_data:
   minio_data:
+  hf_cache:
