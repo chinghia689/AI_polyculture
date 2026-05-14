@@ -30,7 +30,7 @@ def _get_client() -> chromadb.PersistentClient:
 
 @lru_cache(maxsize=1)
 def _get_collection() -> chromadb.Collection:
-    return _get_client().get_collection(COLLECTION)
+    return _get_client().get_or_create_collection(COLLECTION)
 
 
 @lru_cache(maxsize=1)
