@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.routers import calculator, diagnose, vision
@@ -57,9 +57,9 @@ def frontend():
     return FileResponse("frontend/index.html")
 
 
-@app.get("/", tags=["Health"])
+@app.get("/", include_in_schema=False)
 def root():
-    return {"status": "ok", "service": "PolyAqua Agent API v0.2.0"}
+    return RedirectResponse(url="/app")
 
 
 @app.get("/health", tags=["Health"])
