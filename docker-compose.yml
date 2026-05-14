@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: polyaqua
       POSTGRES_USER: polyaqua
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-polyaqua123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     # không expose ra host — chỉ API cần kết nối nội bộ
@@ -23,8 +23,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
       - minio_data:/data
     ports:
@@ -56,7 +56,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://polyaqua:${POSTGRES_PASSWORD:-polyaqua123}@postgres:5432/polyaqua
+      DATABASE_URL: postgresql://polyaqua:${POSTGRES_PASSWORD}@postgres:5432/polyaqua
       CHROMADB_HOST: chromadb
       CHROMADB_PORT: 8000
       MINIO_ENDPOINT: minio:9000
