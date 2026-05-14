@@ -5,7 +5,7 @@ echo "==> Pulling latest code..."
 git pull origin main
 
 echo "==> Building & starting services..."
-docker compose pull postgres minio chromadb
+docker compose pull postgres minio
 docker compose build api
 docker compose up -d
 
