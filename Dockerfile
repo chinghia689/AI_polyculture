@@ -7,6 +7,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ libpq-dev libglib2.0-0 libsm6 libxrender1 libxext6 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Layer nặng (torch ~2GB) — chỉ rebuild khi requirements-heavy.txt thay đổi
+COPY requirements-heavy.txt .
+RUN pip install --no-cache-dir -r requirements-heavy.txt
+
+# Layer nhẹ — rebuild nhanh khi thêm package API
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

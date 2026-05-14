@@ -1,0 +1,7 @@
+# Dependencies nặng — ít thay đổi, Docker cache riêng layer này
+torch==2.6.0
+torchvision==0.21.0
+ultralytics==8.4.49
+onnxruntime==1.20.1
+opencv-python-headless==4.10.0.84
+sentence-transformers==3.1.1
