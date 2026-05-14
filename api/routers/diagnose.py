@@ -79,7 +79,8 @@ def diagnose(
         "growth_note":      wq.growth_note,
         "alerts": [
             {"param": a.param, "label": a.label, "value": a.value, "unit": a.unit,
-             "status": a.status, "message": a.message, "action": a.action}
+             "status": a.status, "message": a.message, "action": a.action,
+             "recheck": a.recheck}
             for a in wq.alerts
         ],
     }

@@ -33,4 +33,5 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
-*.swppolyaqua.db
+*.swp
+polyaqua.db

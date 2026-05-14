@@ -411,6 +411,11 @@
       <h2>Lịch sử chẩn đoán</h2>
       <div id="history-list"><div style="color:#718096;font-size:0.9rem;text-align:center;padding:12px">Đang tải...</div></div>
     </div>
+
+    <div class="card">
+      <h2>Lịch sử tạo lịch thăm ao</h2>
+      <div id="schedule-history-list"><div style="color:#718096;font-size:0.9rem;text-align:center;padding:12px">Đang tải...</div></div>
+    </div>
   </div>
 
 </div><!-- end tab-account -->
@@ -465,6 +470,10 @@ function switchTab(name) {
   const btns = document.querySelectorAll('.tab-btn');
   const idx = ['diagnose','schedule','account'].indexOf(name);
   if (btns[idx]) btns[idx].classList.add('active');
+  if (name === 'account' && currentUser) {
+    loadHistory();
+    loadScheduleHistory();
+  }
 }
 
 // ── Pills ─────────────────────────────────────────────────────────────────
@@ -513,7 +522,7 @@ function renderDiseaseGrid(species) {
   const grid = document.getElementById('disease-grid');
   grid.innerHTML = options.map((d, i) => `
     <div class="disease-card${d.healthy ? ' healthy' : ''}${selectedDisease === d.id && !(d.healthy && selectedDisease !== null) ? ' selected' : ''}"
-         id="dcard-${i}" onclick="selectDisease(${JSON.stringify(d.id)}, ${i})">
+         id="dcard-${i}" onclick="selectDisease(${JSON.stringify(d.id).replace(/"/g, '&quot;')}, ${i})">
       <span class="disease-icon">${d.icon}</span>
       <div class="disease-info">
         <div class="disease-name">${d.name}</div>
@@ -824,10 +833,13 @@ async function generateSchedule() {
   document.getElementById('sch-result').style.display  = 'none';
   document.getElementById('sch-error').style.display   = 'none';
 
+  const token = localStorage.getItem('polyaqua_token');
+  const authHeader = token ? { 'Authorization': 'Bearer ' + token } : {};
+
   try {
     const res = await fetch(`${API}/api/v1/calculator/schedule`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeader },
       body: JSON.stringify({
         start_date:    startDate,
         phase:         phase,
@@ -959,7 +971,12 @@ async function submitAuth() {
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Lỗi');
+    if (!res.ok) {
+      const msg = Array.isArray(data.detail)
+        ? data.detail.map(e => e.msg).join('; ')
+        : (data.detail || 'Lỗi');
+      throw new Error(msg);
+    }
 
     localStorage.setItem('polyaqua_token', data.access_token);
     localStorage.setItem('polyaqua_user', JSON.stringify({ id: data.user_id, name: data.full_name, email: data.email }));
@@ -978,6 +995,7 @@ function showProfile(user) {
   document.getElementById('profile-email').textContent = user.email;
   document.getElementById('header-user').textContent = '👤 ' + user.name.split(' ').pop();
   loadHistory();
+  loadScheduleHistory();
 }
 
 function logout() {
@@ -992,6 +1010,8 @@ function logout() {
 async function loadHistory() {
   const token = localStorage.getItem('polyaqua_token');
   if (!token) return;
+  document.getElementById('history-list').innerHTML =
+    '<div style="color:#718096;font-size:0.9rem;text-align:center;padding:12px">Đang tải...</div>';
   try {
     const res = await fetch(`${API}/api/v1/history/?limit=10`, {
       headers: { 'Authorization': 'Bearer ' + token }
@@ -1007,16 +1027,158 @@ async function loadHistory() {
       const dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
       const speciesIcon = h.species === 'crab' ? '🦀' : '🦐';
       const title = h.disease || (h.pond_stage === 'preparation' ? 'Cải tạo ao' : 'Kiểm tra tổng quát');
-      return `<div style="padding:10px 0;border-bottom:1px solid #f0f4f8">
-        <div style="display:flex;justify-content:space-between;align-items:center">
+      const hasLong = h.treatment_plan && h.treatment_plan.length > 120;
+      const preview = h.treatment_plan ? h.treatment_plan.substring(0, 120).replace(/</g,'&lt;') + (hasLong ? '…' : '') : '';
+      const full    = h.treatment_plan ? h.treatment_plan.replace(/</g,'&lt;') : '';
+      return `<div id="hitem-${h.id}" style="padding:10px 0;border-bottom:1px solid #f0f4f8">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <span style="font-weight:600;font-size:0.9rem">${speciesIcon} ${title}</span>
-          <span style="font-size:0.75rem;color:#718096">${dateStr}</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:8px">
+            <span style="font-size:0.75rem;color:#718096">${dateStr}</span>
+            <button onclick="deleteHistory('${h.id}')" title="Xoá" style="border:none;background:none;color:#e53e3e;font-size:0.85rem;cursor:pointer;padding:0;line-height:1">🗑</button>
+          </div>
         </div>
         ${h.ph ? `<div style="font-size:0.8rem;color:#718096;margin-top:2px">pH ${h.ph}${h.area_ha ? ` · ${h.area_ha} ha` : ''} · ${h.farming_model === 'extensive' ? 'Quảng canh' : 'Bán thâm canh'}</div>` : ''}
+        ${preview ? `
+        <div style="margin-top:5px;background:#f7fafc;border-left:2px solid #90cdf4;padding:6px 8px;border-radius:0 6px 6px 0">
+          <div id="htxt-${h.id}" style="font-size:0.8rem;color:#4a5568;line-height:1.5;white-space:pre-wrap">${preview}</div>
+          ${hasLong ? `<button onclick="toggleTreatment('${h.id}',${JSON.stringify(full).replace(/"/g,'&quot;')})"
+            id="hbtn-${h.id}" style="border:none;background:none;color:#2b6cb0;font-size:0.75rem;cursor:pointer;margin-top:4px;padding:0">
+            ▼ Xem đầy đủ</button>` : ''}
+        </div>` : ''}
       </div>`;
     }).join('');
   } catch (e) {
     document.getElementById('history-list').innerHTML = '<div style="color:#9b2335;font-size:0.85rem;padding:8px">Không tải được lịch sử</div>';
+  }
+}
+
+function toggleTreatment(id, fullText) {
+  const txt = document.getElementById('htxt-' + id);
+  const btn = document.getElementById('hbtn-' + id);
+  const expanded = btn.dataset.expanded === '1';
+  if (expanded) {
+    txt.textContent = fullText.substring(0, 120) + '…';
+    btn.textContent = '▼ Xem đầy đủ';
+    btn.dataset.expanded = '0';
+  } else {
+    txt.textContent = fullText;
+    btn.textContent = '▲ Thu gọn';
+    btn.dataset.expanded = '1';
+  }
+}
+
+async function loadScheduleHistory() {
+  const token = localStorage.getItem('polyaqua_token');
+  if (!token) return;
+  const el = document.getElementById('schedule-history-list');
+  el.innerHTML = '<div style="color:#718096;font-size:0.9rem;text-align:center;padding:12px">Đang tải...</div>';
+  try {
+    const res = await fetch(`${API}/api/v1/history/schedules/?limit=10`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!data.items || data.items.length === 0) {
+      el.innerHTML = '<div style="color:#718096;font-size:0.9rem;text-align:center;padding:12px">Chưa có lịch nào được tạo</div>';
+      return;
+    }
+    const PHASE_LABEL = { preparation: 'Chuẩn bị ao', early: 'Tháng 1–2', mid: 'Tháng 3–4', late: 'Tháng 5–6' };
+    const today = new Date().toISOString().split('T')[0];
+    el.innerHTML = data.items.map(h => {
+      const d = new Date(h.created_at);
+      const dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const model = h.farming_model === 'extensive' ? 'Quảng canh' : 'Bán thâm canh';
+      const phase = PHASE_LABEL[h.phase] || h.phase;
+
+      // Lọc task theo ngày: tương lai và hôm nay
+      const futureTasks = (h.tasks || []).filter(t => t.date >= today);
+      const pastCount   = (h.tasks || []).length - futureTasks.length;
+
+      const taskRows = futureTasks.map(t => {
+        const priClass = `task-pri-${t.priority}`;
+        const catLabel = ({water_test:'Đo nước',treatment:'Xử lý',feed:'Thức ăn',trap_check:'Kiểm lú',harvest:'Thu hoạch'})[t.category] || t.category;
+        const catClass = `cat-${t.category}`;
+        const [,mm,dd] = t.date.split('-');
+        return `<div class="schedule-task">
+          <div class="task-date">${parseInt(dd)}/${parseInt(mm)}</div>
+          <div class="task-body ${priClass}">
+            <div class="task-name">${t.task}</div>
+            ${t.note ? `<div class="task-note">${t.note}</div>` : ''}
+            <span class="task-cat ${catClass}">${catLabel}</span>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div id="sitem-${h.id}" style="padding:10px 0;border-bottom:1px solid #f0f4f8">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <span style="font-weight:600;font-size:0.9rem">📅 ${phase} · ${h.area_ha} ha</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:8px">
+            <span style="font-size:0.75rem;color:#718096">${dateStr}</span>
+            <button onclick="deleteScheduleHistory('${h.id}')" title="Xoá" style="border:none;background:none;color:#e53e3e;font-size:0.85rem;cursor:pointer;padding:0;line-height:1">🗑</button>
+          </div>
+        </div>
+        <div style="font-size:0.8rem;color:#718096;margin-top:2px">
+          Bắt đầu ${h.start_date} · ${h.duration_days} ngày · ${futureTasks.length} việc còn lại${pastCount > 0 ? ` · <span style="color:#e53e3e">${pastCount} đã qua</span>` : ''} · ${model}
+        </div>
+        ${futureTasks.length > 0 ? `
+        <div style="margin-top:6px">
+          <button id="stbtn-${h.id}" onclick="toggleScheduleTasks('${h.id}')"
+            style="border:none;background:none;color:#2b6cb0;font-size:0.75rem;cursor:pointer;padding:0">
+            ▼ Xem ${futureTasks.length} việc còn lại
+          </button>
+          <div id="sttasks-${h.id}" style="display:none;margin-top:6px;border-top:1px solid #e2e8f0;padding-top:4px">
+            ${taskRows}
+          </div>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<div style="color:#9b2335;font-size:0.85rem;padding:8px">Không tải được lịch sử</div>';
+  }
+}
+
+function toggleScheduleTasks(id) {
+  const panel = document.getElementById('sttasks-' + id);
+  const btn   = document.getElementById('stbtn-' + id);
+  const open  = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  const n = panel.querySelectorAll('.schedule-task').length;
+  btn.textContent = open ? `▲ Thu gọn` : `▼ Xem ${n} việc còn lại`;
+}
+
+async function deleteScheduleHistory(id) {
+  const token = localStorage.getItem('polyaqua_token');
+  if (!token) return;
+  if (!confirm('Xoá lịch này?')) return;
+  try {
+    const res = await fetch(`${API}/api/v1/history/schedules/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (res.ok) {
+      const el = document.getElementById('sitem-' + id);
+      if (el) el.remove();
+    }
+  } catch (e) {
+    console.error('Xoá thất bại', e);
+  }
+}
+
+async function deleteHistory(id) {
+  const token = localStorage.getItem('polyaqua_token');
+  if (!token) return;
+  if (!confirm('Xoá chẩn đoán này?')) return;
+  try {
+    const res = await fetch(`${API}/api/v1/history/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (res.ok) {
+      const el = document.getElementById('hitem-' + id);
+      if (el) el.remove();
+    }
+  } catch (e) {
+    console.error('Xoá thất bại', e);
   }
 }
 </script>

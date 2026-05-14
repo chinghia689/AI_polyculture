@@ -1,10 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from module_calculator.src.stocking_calculator import (
     calculate_stocking, FarmingModel,
 )
 from module_calculator.src.lime_calculator import calculate_lime
 from module_calculator.src.probiotic_calculator import calculate_probiotic
 from module_calculator.src.schedule_engine import generate_schedule, FarmPhase
+from api.db import get_db
+from api.dependencies import get_optional_user
+from api.models.schedule_history import ScheduleHistory
 from api.schemas.calculator import (
     StockingRequest,  StockingResponse,
     LimeRequest,      LimeResponse,
@@ -86,7 +90,11 @@ def probiotic(req: ProbioticRequest):
 
 
 @router.post("/schedule", response_model=ScheduleResponse)
-def schedule(req: ScheduleRequest):
+def schedule(
+    req: ScheduleRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_optional_user),
+):
     s = generate_schedule(
         req.start_date, FarmPhase(req.phase),
         req.duration_days, req.area_ha,
@@ -106,6 +114,24 @@ def schedule(req: ScheduleRequest):
         )
         for t in s.upcoming(7)
     ]
+
+    if current_user:
+        db.query(ScheduleHistory).filter(
+            ScheduleHistory.user_id == current_user.id
+        ).delete()
+        db.add(ScheduleHistory(
+            user_id=current_user.id,
+            start_date=str(req.start_date),
+            phase=req.phase.value,
+            duration_days=req.duration_days,
+            area_ha=req.area_ha,
+            farming_model=req.farming_model.value,
+            task_count=len(tasks),
+            tasks=[{"date": t.date.isoformat(), "task": t.task, "category": t.category,
+                    "priority": t.priority, "note": t.note} for t in tasks],
+        ))
+        db.commit()
+
     return ScheduleResponse(
         farm_phase=s.farm_phase, start_date=s.start_date,
         tasks=tasks, upcoming_7d=upcoming,

@@ -15,5 +15,6 @@ class User(Base):
     phone:           Mapped[str|None] = mapped_column(String(20), nullable=True)
     created_at:      Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    farms   = relationship("Farm",           back_populates="owner",   cascade="all, delete-orphan")
-    history = relationship("DiagnoseHistory", back_populates="user",   cascade="all, delete-orphan")
+    farms            = relationship("Farm",            back_populates="owner",   cascade="all, delete-orphan")
+    history          = relationship("DiagnoseHistory", back_populates="user",   cascade="all, delete-orphan")
+    schedule_history = relationship("ScheduleHistory", back_populates="user",   cascade="all, delete-orphan")

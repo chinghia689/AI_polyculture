@@ -29,8 +29,8 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"   # API
-      - "9001:9001"   # Web Console: http://localhost:9001
+      - "9000:9000"
+      - "9001:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -42,17 +42,36 @@ services:
     container_name: polyaqua_chromadb
     restart: unless-stopped
     environment:
-      CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER: ""
       ANONYMIZED_TELEMETRY: "False"
     volumes:
       - chromadb_data:/chroma/chroma
-    ports:
-      - "8000:8000"
+    # port 8000 không expose ra host — chỉ dùng nội bộ qua Docker network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  api:
+    build: .
+    container_name: polyaqua_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://polyaqua:${POSTGRES_PASSWORD:-polyaqua123}@postgres:5432/polyaqua
+      CHROMADB_HOST: chromadb
+      CHROMADB_PORT: 8000
+      MINIO_ENDPOINT: minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./module_vision/models:/app/module_vision/models
+      - ./module_rag/data:/app/module_rag/data
 
 volumes:
   postgres_data:
