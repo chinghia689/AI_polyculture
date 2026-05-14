@@ -3,7 +3,7 @@ ultralytics==8.4.49         # YOLOv8 — Python 3.13 compatible
 torch==2.6.0                # Python 3.13: dùng >=2.5.0
 torchvision==0.21.0         # phải khớp với torch 2.6.0
 onnxruntime==1.20.1         # Python 3.13: dùng >=1.20.0
-opencv-python==4.10.0.84
+opencv-python-headless==4.10.0.84
 albumentations==1.4.18      # Augmentation pipeline
 Pillow==10.4.0
 roboflow==1.1.48            # Dataset management
