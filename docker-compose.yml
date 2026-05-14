@@ -45,10 +45,11 @@ services:
       - chromadb_data:/chroma/chroma
     # không expose ra host — chỉ API cần kết nối nội bộ
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat')\""]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat')\""]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
 
   api:
     build: .
